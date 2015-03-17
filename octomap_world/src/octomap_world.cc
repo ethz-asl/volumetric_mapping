@@ -15,21 +15,22 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   LOG(FATAL) << "TODO!";
 }
 
- void OctomapWorld::insertDisparityMap(const Transformation& sensor_to_world,
+void OctomapWorld::insertDisparityMap(
+    const Transformation& sensor_to_world,
     const stereo_msgs::DisparityImageConstPtr& disparity) {
   LOG(FATAL) << "TODO!";
 }
 
- void OctomapWorld:: insertPointcloud(const Transformation& sensor_to_world,
+void OctomapWorld::insertPointcloud(
+    const Transformation& sensor_to_world,
     const sensor_msgs::PointCloud2::ConstPtr& cloud) {
   LOG(FATAL) << "TODO!";
 }
 
-OctomapWorld::CellStatus OctomapWorld::getCellStatus(const Eigen::Vector3d& point,
-                                 const Eigen::Vector3d& bounding_box) const {
-}
+OctomapWorld::CellStatus OctomapWorld::getCellStatus(
+    const Eigen::Vector3d& point, const Eigen::Vector3d& bounding_box) const {}
 
- double OctomapWorld::getResolution() const {
+double OctomapWorld::getResolution() const {
   CHECK(octree_) << "Octree uninitialized!";
   return octree_->getResolution();
 }
@@ -55,7 +56,8 @@ void OctomapWorld::setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg) {
 }
 
 void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
-  octree_.reset(dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(msg)));
+  octree_.reset(
+      dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(msg)));
 }
 
 bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {

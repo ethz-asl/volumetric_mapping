@@ -12,7 +12,8 @@ class OctomapManager : public OctomapWorld {
   typedef std::shared_ptr<OctomapManager> Ptr;
 
   // By default, loads octomap parameters from the ROS parameter server.
-  OctomapManager(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) {}
+  OctomapManager(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) {
+  }
 
   // Sets up subscriptions based on ROS node parameters.
   void subscribe();

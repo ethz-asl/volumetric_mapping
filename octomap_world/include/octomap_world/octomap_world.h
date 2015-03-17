@@ -42,10 +42,12 @@ class OctomapWorld : public WorldBase {
   void setOctomapParameters(const OctomapParameters& params);
 
   // Virtual functions for inserting data.
-  virtual void insertDisparityMap(const Transformation& sensor_to_world,
+  virtual void insertDisparityMap(
+      const Transformation& sensor_to_world,
       const stereo_msgs::DisparityImageConstPtr& disparity);
 
-  virtual void  insertPointcloud(const Transformation& sensor_to_world,
+  virtual void insertPointcloud(
+      const Transformation& sensor_to_world,
       const sensor_msgs::PointCloud2::ConstPtr& cloud);
 
   // Virtual functions for outputting map status.

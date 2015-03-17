@@ -27,10 +27,12 @@ class WorldBase {
   // Data insertion functions.
   // TODO(helenol): Figure out which stereo parameters we need that aren't
   // contained in the stereo_msgs::DisparityImage.
-  virtual void insertDisparityMap(const Transformation& sensor_to_world,
+  virtual void insertDisparityMap(
+      const Transformation& sensor_to_world,
       const stereo_msgs::DisparityImageConstPtr& disparity) {}
 
-  virtual void insertPointcloud(const Transformation& sensor_to_world,
+  virtual void insertPointcloud(
+      const Transformation& sensor_to_world,
       const sensor_msgs::PointCloud2::ConstPtr& cloud) {}
 
   // Methods to query the current map state.
