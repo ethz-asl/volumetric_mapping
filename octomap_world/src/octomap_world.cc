@@ -97,6 +97,24 @@ void OctomapWorld::insertPointcloud(
       }
     }
   }
+
+  // Mark free cells.
+  for (octomap::KeySet::iterator it = free_cells.begin(),
+                                 end = free_cells.end();
+       it != end; ++it) {
+    if (occupied_cells.find(*it) == occupied_cells.end()) {
+      octree_->updateNode(*it, false);
+    }
+  }
+
+  // Mark occupied cells.
+  for (octomap::KeySet::iterator it = occupied_cells.begin(),
+                                 end = occupied_cells.end();
+       it != end; it++) {
+    octree_->updateNode(*it, true);
+  }
+
+  octree_->updateInnerOccupancy();
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
