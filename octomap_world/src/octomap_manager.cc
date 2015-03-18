@@ -13,4 +13,9 @@ void OctomapManager::publishFree() {}
 void OctomapManager::publishUnknown() {}
 void OctomapManager::someServiceCallbacks() {}
 
+void OctomapManager::insertDisparityImageWithTf(
+    const stereo_msgs::DisparityImageConstPtr& disparity) {}
+void OctomapManager::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::ConstPtr& disparity) {}
+
 }  // namespace volumetric_mapping

@@ -3,6 +3,8 @@
 
 #include "octomap_world/octomap_world.h"
 
+#include <tf/transform_listener.h>
+
 namespace volumetric_mapping {
 
 // An inherited class from OctomapWorld, which also handles the connection to
@@ -25,8 +27,20 @@ class OctomapManager : public OctomapWorld {
   void publishFree();
   void publishUnknown();
 
+  // Data insertion callbacks with TF frame resolution through the listener.
+  void insertDisparityImageWithTf(
+      const stereo_msgs::DisparityImageConstPtr& disparity);
+  void insertPointcloudWithTf(
+      const sensor_msgs::PointCloud2::ConstPtr& disparity);
+
   // TODO(helenol): figure out which services we need again.
   void someServiceCallbacks();
+
+ private:
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
+
+  tf::TransformListener tf_listener_;
 };
 
 }  // namespace volumetric_mapping
