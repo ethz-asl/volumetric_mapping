@@ -56,12 +56,14 @@ void OctomapWorld::insertPointcloud(
   pcl::fromROSMsg(*cloud_msg, *cloud);
 
   // First, rotate the pointcloud into the world frame.
-  pcl::transformPointCloud(*cloud, *cloud, sensor_to_world.getTransformationMatrix());
+  pcl::transformPointCloud(*cloud, *cloud,
+                           sensor_to_world.getTransformationMatrix());
   // Get the sensor origin in the world frame.
   Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
   sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
   octomap::point3d sensor_origin(sensor_origin_eigen.x(),
-      sensor_origin_eigen.y(), sensor_origin_eigen.z());
+                                 sensor_origin_eigen.y(),
+                                 sensor_origin_eigen.z());
 
   // Then add all the rays from this pointcloud.
   // We do this as a batch operation - so first get all the keys in a set, then
@@ -76,17 +78,18 @@ void OctomapWorld::insertPointcloud(
 
       // Cast a ray to compute all the free cells.
       octomap::KeyRay key_ray;
-      if (octree_->computeRayKeys(sensor_origin, point, key_ray)){
+      if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
         free_cells.insert(key_ray.begin(), key_ray.end());
       }
       // Mark endpoing as occupied.
       octomap::OcTreeKey key;
-      if (octree_->coordToKeyChecked(point, key)){
+      if (octree_->coordToKeyChecked(point, key)) {
         occupied_cells.insert(key);
       }
     } else {
       // If the ray is longer than the max range, just update free space.
-      octomap::point3d new_end = sensor_origin +
+      octomap::point3d new_end =
+          sensor_origin +
           (point - sensor_origin).normalized() * params_.sensor_max_range;
       octomap::KeyRay key_ray;
       if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
