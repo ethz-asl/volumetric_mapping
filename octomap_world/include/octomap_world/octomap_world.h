@@ -45,14 +45,11 @@ class OctomapWorld : public WorldBase {
   typedef std::shared_ptr<OctomapWorld> Ptr;
 
  public:
-  // Default constructor - if this one is called, you MUST call
-  // setOctomapParameters() before calling any other functions.
-  // TODO(helenol): thinking more and more we should just create a default
-  // octree here.
-  OctomapWorld() {}
+  // Default constructor - creates a valid octree using parameter defaults.
+  OctomapWorld();
 
   // Creates an octomap with the correct parameters.
-  OctomapWorld(const OctomapParameters& params) {}
+  OctomapWorld(const OctomapParameters& params);
   virtual ~OctomapWorld() {}
 
   // General map management.

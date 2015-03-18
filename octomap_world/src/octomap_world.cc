@@ -6,6 +6,15 @@
 
 namespace volumetric_mapping {
 
+// Create a default parameters object and call the other constructor with it.
+OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {
+}
+
+// Creates an octomap with the correct parameters.
+OctomapWorld::OctomapWorld(const OctomapParameters& params) {
+  setOctomapParameters(params);
+}
+
 void OctomapWorld::resetMap() {
   CHECK(octree_) << "Octree uninitialized!";
   octree_->clear();
