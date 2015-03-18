@@ -94,8 +94,6 @@ class OctomapWorld : public WorldBase {
   bool getOctomapFullMsg(octomap_msgs::Octomap* msg) const;
   // Clears the current octomap and replaces it with one from the message.
   void setOctomapFromMsg(const octomap_msgs::Octomap& msg);
-  void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
-  void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
 
   // Loading and writing to disk.
   bool loadOctomapFromFile(const std::string& filename);
@@ -104,6 +102,9 @@ class OctomapWorld : public WorldBase {
  private:
   // Check if the node at the specified key has neighbors or not.
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
+
+  void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
+  void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
 
   std::shared_ptr<octomap::OcTree> octree_;
 
