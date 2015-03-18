@@ -45,6 +45,12 @@ class WorldBase {
     return CellStatus::kFree;
   }
 
+  virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
+                                   const Eigen::Vector3d& end);
+  virtual CellStatus getLineStatusBoundingBox(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& bounding_box);
+
   virtual Eigen::Vector3d getMapCenter() const {
     return Eigen::Vector3d::Zero();
   }
@@ -53,10 +59,6 @@ class WorldBase {
                            std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max());
   }
-
-  // TODO(helenol): what else do we actually need/use here?
-  // Overall map size/resolution/etc.? Ray-casting? Test a whole trajectory in
-  // batch?
 };
 
 }  // namespace volumetric_mapping
