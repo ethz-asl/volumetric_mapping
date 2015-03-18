@@ -16,7 +16,8 @@ struct OctomapParameters {
         probability_miss(0.4),
         threshold_min(0.12),
         threshold_max(0.97),
-        filter_speckles(true) {
+        filter_speckles(true),
+        sensor_max_range(10.0) {
     // Set reasonable defaults here...
     // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
@@ -34,6 +35,10 @@ struct OctomapParameters {
 
   // Filter neighbor-less nodes as 'speckles'.
   bool filter_speckles;
+
+  // Maximum range to allow a sensor measurement. Negative values to not
+  // filter.
+  double sensor_max_range;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
