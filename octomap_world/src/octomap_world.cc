@@ -28,7 +28,8 @@ void OctomapWorld::insertPointcloud(
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
-    const Eigen::Vector3d& point, const Eigen::Vector3d& bounding_box) const {
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& bounding_box_size) const {
   return CellStatus::kUnknown;
 }
 

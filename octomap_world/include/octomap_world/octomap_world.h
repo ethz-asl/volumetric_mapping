@@ -62,14 +62,16 @@ class OctomapWorld : public WorldBase {
       const sensor_msgs::PointCloud2::ConstPtr& cloud);
 
   // Virtual functions for outputting map status.
-  virtual CellStatus getCellStatusBoundingBox(const Eigen::Vector3d& point,
-                                   const Eigen::Vector3d& bounding_box) const;
+  virtual CellStatus getCellStatusBoundingBox(
+      const Eigen::Vector3d& point,
+      const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
   virtual double getResolution() const;
 
   // Manually affect the probabilities of areas within a bounding box.
   void SetLogOddsBoundingBox(const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box, double log_odds_value);
+                             const Eigen::Vector3d& bounding_box_size,
+                             double log_odds_value);
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;

@@ -36,17 +36,23 @@ class WorldBase {
       const sensor_msgs::PointCloud2::ConstPtr& cloud) {}
 
   // Methods to query the current map state.
-  virtual CellStatus getCellStatusBoundingBox(const Eigen::Vector3d& point,
-                                   const Eigen::Vector3d& bounding_box) const {
+  virtual CellStatus getCellStatusBoundingBox(
+      const Eigen::Vector3d& point,
+      const Eigen::Vector3d& bounding_box_size) const {
     return CellStatus::kFree;
   }
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const {
     return CellStatus::kFree;
   }
 
-  virtual Eigen::Vector3d getMetricMin() const { return Eigen::Vector3d(); };
-  virtual Eigen::Vector3d getMetricMax() const { return Eigen::Vector3d(); };
-  virtual Eigen::Vector3d getMetricSize() const { return Eigen::Vector3d(); };
+  virtual Eigen::Vector3d getMapCenter() const {
+    return Eigen::Vector3d::Zero();
+  }
+  virtual Eigen::Vector3d getMapSize() const {
+    return Eigen::Vector3d(std::numeric_limits<double>::max(),
+                           std::numeric_limits<double>::max(),
+                           std::numeric_limits<double>::max());
+  }
 
   // TODO(helenol): what else do we actually need/use here?
   // Overall map size/resolution/etc.? Ray-casting? Test a whole trajectory in
