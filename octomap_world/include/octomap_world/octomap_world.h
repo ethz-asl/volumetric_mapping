@@ -14,7 +14,18 @@ struct OctomapParameters {
     // Set reasonable defaults here...
   }
 
+  // Resolution for the Octree. It is not possible to change this without
+  // creating a new Octree.
   double resolution;
+  // Hit probabilities for pointcloud data.
+  double probability_hit;
+  double probability_miss;
+  // Clamping thresholds for pruning: above and below these thresholds, all
+  // values are treated the same.
+  double threshold_min;
+  double threshold_max;
+
+  bool filter_speckles;
   // TODO(helenol): fill rest in.
 };
 
