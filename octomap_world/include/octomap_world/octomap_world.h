@@ -69,7 +69,7 @@ class OctomapWorld : public WorldBase {
   virtual double getResolution() const;
 
   // Manually affect the probabilities of areas within a bounding box.
-  void SetLogOddsBoundingBox(const Eigen::Vector3d& position,
+  void setLogOddsBoundingBox(const Eigen::Vector3d& position,
                              const Eigen::Vector3d& bounding_box_size,
                              double log_odds_value);
 
@@ -86,6 +86,10 @@ class OctomapWorld : public WorldBase {
   bool writeOctomapToFile(const std::string& filename) const;
 
  private:
+  // Check if the node at the specified key has neighbors or not.
+  bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const;
+
+
   std::shared_ptr<octomap::OcTree> octree_;
 };
 
