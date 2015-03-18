@@ -15,7 +15,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   LOG(FATAL) << "TODO!";
 }
 
-void OctomapWorld::insertDisparityMap(
+void OctomapWorld::insertDisparityImage(
     const Transformation& sensor_to_world,
     const stereo_msgs::DisparityImageConstPtr& disparity) {
   LOG(FATAL) << "TODO!";
@@ -27,8 +27,15 @@ void OctomapWorld::insertPointcloud(
   LOG(FATAL) << "TODO!";
 }
 
-OctomapWorld::CellStatus OctomapWorld::getCellStatus(
-    const Eigen::Vector3d& point, const Eigen::Vector3d& bounding_box) const {}
+OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
+    const Eigen::Vector3d& point, const Eigen::Vector3d& bounding_box) const {
+  return CellStatus::kUnknown;
+}
+
+OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
+    const Eigen::Vector3d& point) const {
+  return CellStatus::kUnknown;
+}
 
 double OctomapWorld::getResolution() const {
   CHECK(octree_) << "Octree uninitialized!";

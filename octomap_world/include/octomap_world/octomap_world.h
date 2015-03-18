@@ -42,7 +42,7 @@ class OctomapWorld : public WorldBase {
   void setOctomapParameters(const OctomapParameters& params);
 
   // Virtual functions for inserting data.
-  virtual void insertDisparityMap(
+  virtual void insertDisparityImage(
       const Transformation& sensor_to_world,
       const stereo_msgs::DisparityImageConstPtr& disparity);
 
@@ -51,10 +51,14 @@ class OctomapWorld : public WorldBase {
       const sensor_msgs::PointCloud2::ConstPtr& cloud);
 
   // Virtual functions for outputting map status.
-  virtual CellStatus getCellStatus(const Eigen::Vector3d& point,
+  virtual CellStatus getCellStatusBoundingBox(const Eigen::Vector3d& point,
                                    const Eigen::Vector3d& bounding_box) const;
-
+  virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
   virtual double getResolution() const;
+
+  // Manually affect the probabilities of areas within a bounding box.
+  void SetLogOddsBoundingBox(const Eigen::Vector3d& position,
+      const Eigen::Vector3d& bounding_box, double log_odds_value);
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;

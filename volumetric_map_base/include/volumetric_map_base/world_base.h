@@ -27,7 +27,7 @@ class WorldBase {
   // Data insertion functions.
   // TODO(helenol): Figure out which stereo parameters we need that aren't
   // contained in the stereo_msgs::DisparityImage.
-  virtual void insertDisparityMap(
+  virtual void insertDisparityImage(
       const Transformation& sensor_to_world,
       const stereo_msgs::DisparityImageConstPtr& disparity) {}
 
@@ -36,10 +36,17 @@ class WorldBase {
       const sensor_msgs::PointCloud2::ConstPtr& cloud) {}
 
   // Methods to query the current map state.
-  virtual CellStatus getCellStatus(const Eigen::Vector3d& point,
-                                   const Eigen::Vector3d& bounding_box) {
+  virtual CellStatus getCellStatusBoundingBox(const Eigen::Vector3d& point,
+                                   const Eigen::Vector3d& bounding_box) const {
     return CellStatus::kFree;
   }
+  virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const {
+    return CellStatus::kFree;
+  }
+
+  virtual Eigen::Vector3d getMetricMin() const { return Eigen::Vector3d(); };
+  virtual Eigen::Vector3d getMetricMax() const { return Eigen::Vector3d(); };
+  virtual Eigen::Vector3d getMetricSize() const { return Eigen::Vector3d(); };
 
   // TODO(helenol): what else do we actually need/use here?
   // Overall map size/resolution/etc.? Ray-casting? Test a whole trajectory in
