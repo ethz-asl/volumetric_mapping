@@ -47,7 +47,45 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
     const Eigen::Vector3d& point) const {
-  return CellStatus::kUnknown;
+  octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
+  if (node == NULL) {
+    return CellStatus::kUnknown;
+  } else if (octree_->isNodeOccupied(node)) {
+    return CellStatus::kOccupied;
+  } else {
+    return CellStatus::kFree;
+  }
+}
+
+OctomapWorld::CellStatus OctomapWorld::getLineStatus(const Eigen::Vector3d& start,
+                                   const Eigen::Vector3d& end) const {
+  // Get all node keys for this line.
+  // This is actually a typedef for a vector of OcTreeKeys.
+  octomap::KeyRay key_ray;
+
+  octree_->computeRayKeys(octomap::point3d(start.x(), start.y(), start.z()),
+      octomap::point3d(end.x(), end.y(), end.z()), key_ray);
+
+  // Now check if there are any unknown or occupied nodes in the ray.
+  for (octomap::OcTreeKey key : key_ray) {
+    octomap::OcTreeNode* node = octree_->search(key);
+    if (node == NULL) {
+      return CellStatus::kUnknown;
+    } else if (octree_->isNodeOccupied(node)) {
+      return CellStatus::kOccupied;
+    }
+  }
+
+  return CellStatus::kFree;
+}
+
+OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& bounding_box) const {
+  LOG(FATAL) << "TODO. This one is harder.";
+  // TODO(helenol): Probably best way would be to get all the coordinates along
+  // the line, then make a set of all the OcTreeKeys in all the bounding boxes
+  // around the nodes... and then just go through and query once.
 }
 
 double OctomapWorld::getResolution() const {
@@ -78,7 +116,8 @@ void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
       }
     }
   }
-  octree_->updateInnerOccupancy(); // TODO(burrimi): check if necessary.
+  // This is necessary since lazy_eval is set to true.
+  octree_->updateInnerOccupancy();
 }
 
 bool OctomapWorld::getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const {
@@ -107,11 +146,15 @@ void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
 }
 
 bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {
-  LOG(FATAL) << "TODO!";
+  if (!octree_) {
+    // TODO(helenol): Resolution shouldn't matter... I think. I'm not sure.
+    octree_.reset(new octomap::OcTree(0.05));
+  }
+  return octree_->readBinary(filename);
 }
 
-bool OctomapWorld::writeOctomapToFile(const std::string& filename) const {
-  LOG(FATAL) << "TODO!";
+bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
+  return octree_->writeBinary(filename);
 }
 
 
@@ -132,7 +175,7 @@ bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
         if (current_key != key) {
           octomap::OcTreeNode* node = octree_->search(key);
           if (node && octree_->isNodeOccupied(node)) {
-            // we have a neighbor => break!
+            // we have a neighbor => not a speckle!
             return false;
           }
         }

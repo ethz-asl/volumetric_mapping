@@ -10,8 +10,15 @@
 namespace volumetric_mapping {
 
 struct OctomapParameters {
-  OctomapParameters() {
+  OctomapParameters()
+    : resolution(0.05),
+      probability_hit(0.7),
+      probability_miss(0.4),
+      threshold_min(0.12),
+      threshold_max(0.97),
+      filter_speckles(true) {
     // Set reasonable defaults here...
+    // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
 
   // Resolution for the Octree. It is not possible to change this without
@@ -25,8 +32,8 @@ struct OctomapParameters {
   double threshold_min;
   double threshold_max;
 
+  // Filter neighbor-less nodes as 'speckles'.
   bool filter_speckles;
-  // TODO(helenol): fill rest in.
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
@@ -40,6 +47,8 @@ class OctomapWorld : public WorldBase {
  public:
   // Default constructor - if this one is called, you MUST call
   // setOctomapParameters() before calling any other functions.
+  // TODO(helenol): thinking more and more we should just create a default
+  // octree here.
   OctomapWorld() {}
 
   // Creates an octomap with the correct parameters.
@@ -66,6 +75,11 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& point,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
+  virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
+                                   const Eigen::Vector3d& end) const;
+  virtual CellStatus getLineStatusBoundingBox(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& bounding_box) const;
   virtual double getResolution() const;
 
   // Manually affect the probabilities of areas within a bounding box.
@@ -83,12 +97,11 @@ class OctomapWorld : public WorldBase {
 
   // Loading and writing to disk.
   bool loadOctomapFromFile(const std::string& filename);
-  bool writeOctomapToFile(const std::string& filename) const;
+  bool writeOctomapToFile(const std::string& filename);
 
  private:
   // Check if the node at the specified key has neighbors or not.
-  bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const;
-
+  bool isSpeckleNode(const octomap::OcTreeKey& key) const;
 
   std::shared_ptr<octomap::OcTree> octree_;
 };
