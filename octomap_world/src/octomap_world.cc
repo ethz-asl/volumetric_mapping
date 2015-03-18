@@ -34,6 +34,10 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   octree_->setProbMiss(params.probability_miss);
   octree_->setClampingThresMin(params.threshold_min);
   octree_->setClampingThresMax(params.threshold_max);
+
+  // Copy over all the parameters for future use (some are not used just for
+  // creating the octree).
+  params_ = params;
 }
 
 void OctomapWorld::insertDisparityImage(
@@ -51,7 +55,35 @@ void OctomapWorld::insertPointcloud(
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,
     const Eigen::Vector3d& bounding_box_size) const {
-  return CellStatus::kUnknown;
+  // First case: center point is unknown or occupied. Can just quit.
+  // Weird thing: previous implementation does NOT test the bounding box for
+  // unknown nodes (in fact, this seems to be like... seriously non-trivial,
+  // given the leaf_bbx_interator implementation).
+  CellStatus center_status = getCellStatusPoint(point);
+  if (center_status != CellStatus::kFree) {
+    return center_status;
+  }
+
+  // Now we have to iterate over everything in the bounding box.
+  Eigen::Vector3d bbx_min_eigen = point - bounding_box_size / 2;
+  Eigen::Vector3d bbx_max_eigen = point + bounding_box_size / 2;
+
+  octomap::point3d bbx_min(bbx_min_eigen.x(), bbx_min_eigen.y(), bbx_min_eigen.z());
+  octomap::point3d bbx_max(bbx_max_eigen.x(), bbx_max_eigen.y(), bbx_max_eigen.z());
+
+  for (octomap::OcTree::leaf_bbx_iterator
+           iter = octree_->begin_leafs_bbx(bbx_min, bbx_max),
+           end = octree_->end_leafs_bbx();
+       iter != end; ++iter) {
+    if (octree_->isNodeOccupied(*iter)) {
+      if (params_.filter_speckles && isSpeckleNode(iter.getKey())) {
+        continue;
+      } else {
+        return CellStatus::kOccupied;
+      }
+    }
+  }
+  return CellStatus::kFree;
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(

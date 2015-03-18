@@ -101,6 +101,8 @@ class OctomapWorld : public WorldBase {
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
 
   std::shared_ptr<octomap::OcTree> octree_;
+
+  OctomapParameters params_;
 };
 
 }  // namespace volumetric_mapping
