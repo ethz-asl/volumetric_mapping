@@ -11,12 +11,12 @@ namespace volumetric_mapping {
 
 struct OctomapParameters {
   OctomapParameters()
-    : resolution(0.05),
-      probability_hit(0.7),
-      probability_miss(0.4),
-      threshold_min(0.12),
-      threshold_max(0.97),
-      filter_speckles(true) {
+      : resolution(0.05),
+        probability_hit(0.7),
+        probability_miss(0.4),
+        threshold_min(0.12),
+        threshold_max(0.97),
+        filter_speckles(true) {
     // Set reasonable defaults here...
     // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }

@@ -7,8 +7,7 @@
 namespace volumetric_mapping {
 
 // Create a default parameters object and call the other constructor with it.
-OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {
-}
+OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
 OctomapWorld::OctomapWorld(const OctomapParameters& params) {
@@ -68,8 +67,10 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   Eigen::Vector3d bbx_min_eigen = point - bounding_box_size / 2;
   Eigen::Vector3d bbx_max_eigen = point + bounding_box_size / 2;
 
-  octomap::point3d bbx_min(bbx_min_eigen.x(), bbx_min_eigen.y(), bbx_min_eigen.z());
-  octomap::point3d bbx_max(bbx_max_eigen.x(), bbx_max_eigen.y(), bbx_max_eigen.z());
+  octomap::point3d bbx_min(bbx_min_eigen.x(), bbx_min_eigen.y(),
+                           bbx_min_eigen.z());
+  octomap::point3d bbx_max(bbx_max_eigen.x(), bbx_max_eigen.y(),
+                           bbx_max_eigen.z());
 
   for (octomap::OcTree::leaf_bbx_iterator
            iter = octree_->begin_leafs_bbx(bbx_min, bbx_max),
@@ -98,14 +99,14 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
   }
 }
 
-OctomapWorld::CellStatus OctomapWorld::getLineStatus(const Eigen::Vector3d& start,
-                                   const Eigen::Vector3d& end) const {
+OctomapWorld::CellStatus OctomapWorld::getLineStatus(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end) const {
   // Get all node keys for this line.
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
   octree_->computeRayKeys(octomap::point3d(start.x(), start.y(), start.z()),
-      octomap::point3d(end.x(), end.y(), end.z()), key_ray);
+                          octomap::point3d(end.x(), end.y(), end.z()), key_ray);
 
   // Now check if there are any unknown or occupied nodes in the ray.
   for (octomap::OcTreeKey key : key_ray) {
@@ -121,8 +122,8 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(const Eigen::Vector3d& star
 }
 
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
-      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-      const Eigen::Vector3d& bounding_box) const {
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+    const Eigen::Vector3d& bounding_box) const {
   LOG(FATAL) << "TODO. This one is harder.";
   // TODO(helenol): Probably best way would be to get all the coordinates along
   // the line, then make a set of all the OcTreeKeys in all the bounding boxes
@@ -135,24 +136,25 @@ double OctomapWorld::getResolution() const {
 }
 
 void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                             const Eigen::Vector3d& bounding_box,
-                             double log_odds_value) {
+                                         const Eigen::Vector3d& bounding_box,
+                                         double log_odds_value) {
   CHECK(octree_) << "Octree uninitialized!";
 
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
-  const double epsilon = 0.001; // Small offset to not hit boundary of nodes.
+  const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
 
-  for (double x_position = position.x() - bounding_box.x()/2 - epsilon;
-      x_position <= position.x() + bounding_box.x()/2 + epsilon;
-      x_position += resolution) {
-    for (double y_position = position.y() - bounding_box.y()/2 - epsilon;
-         y_position <= position.y() + bounding_box.y()/2 + epsilon;
+  for (double x_position = position.x() - bounding_box.x() / 2 - epsilon;
+       x_position <= position.x() + bounding_box.x() / 2 + epsilon;
+       x_position += resolution) {
+    for (double y_position = position.y() - bounding_box.y() / 2 - epsilon;
+         y_position <= position.y() + bounding_box.y() / 2 + epsilon;
          y_position += resolution) {
-      for (double z_position = position.z() - bounding_box.z()/2 - epsilon;
-           z_position <= position.z() + bounding_box.z()/2 + epsilon;
+      for (double z_position = position.z() - bounding_box.z() / 2 - epsilon;
+           z_position <= position.z() + bounding_box.z() / 2 + epsilon;
            z_position += resolution) {
-        octomap::point3d point = octomap::point3d(x_position, y_position, z_position);
+        octomap::point3d point =
+            octomap::point3d(x_position, y_position, z_position);
         octree_->setNodeValue(point, log_odds_value, lazy_eval);
       }
     }
@@ -198,20 +200,16 @@ bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
   return octree_->writeBinary(filename);
 }
 
-
 bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
   octomap::OcTreeKey current_key;
   // Search neighbors in a +/-1 key range cube. If there are neighbors, it's
   // not a speckle.
   bool neighbor_found = false;
-  for (current_key[2] = key[2] - 1;
-       current_key[2] <= key[2] + 1;
+  for (current_key[2] = key[2] - 1; current_key[2] <= key[2] + 1;
        ++current_key[2]) {
-    for (current_key[1] = key[1] - 1;
-        current_key[1] <= key[1] + 1;
+    for (current_key[1] = key[1] - 1; current_key[1] <= key[1] + 1;
          ++current_key[1]) {
-      for (current_key[0] = key[0] - 1;
-           current_key[0] <= key[0] + 1;
+      for (current_key[0] = key[0] - 1; current_key[0] <= key[0] + 1;
            ++current_key[0]) {
         if (current_key != key) {
           octomap::OcTreeNode* node = octree_->search(key);
