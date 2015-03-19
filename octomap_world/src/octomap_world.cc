@@ -211,13 +211,11 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   // around the nodes... and then just go through and query once.
 }
 
-double OctomapWorld::getResolution() const {
-  return octree_->getResolution();
-}
+double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
-void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                                         const Eigen::Vector3d& bounding_box_size,
-                                         double log_odds_value) {
+void OctomapWorld::setLogOddsBoundingBox(
+    const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+    double log_odds_value) {
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
@@ -230,7 +228,7 @@ void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
     for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-        y_position += resolution) {
+         y_position += resolution) {
       for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
            z_position += resolution) {
         octomap::point3d point =
