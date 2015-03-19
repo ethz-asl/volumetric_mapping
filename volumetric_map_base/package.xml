@@ -15,4 +15,6 @@
   <depend>minkindr</depend>
   <depend>sensor_msgs</depend>
   <depend>stereo_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_geometry</depend>
 </package>

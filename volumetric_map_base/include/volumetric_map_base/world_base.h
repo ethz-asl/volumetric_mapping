@@ -4,26 +4,12 @@
 #include <kindr/minimal/quat-transformation.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <opencv2/opencv.hpp>
 
 namespace volumetric_mapping {
 
 typedef kindr::minimal::QuatTransformation Transformation;
-
-// Minimum number of parameters that need to be known about the stereo camera
-// pair to project the disparity image into 3D.
-struct StereoCameraParameters {
-  StereoCameraParameters()
-      : baseline(0), focal_length(0), left_cx(0), left_cy(0), right_cx(0),
-        right_cy(0), image_width(0), image_height(0) {}
-  double baseline;
-  double focal_length;
-  double left_cx;
-  double left_cy;
-  double right_cx;
-  double right_cy;
-  int image_width;
-  int image_height;
-};
 
 // Base class for all 3D volumetric representations of the environment.
 // By default, implements a valid completely empty world.
@@ -41,11 +27,28 @@ class WorldBase {
   virtual ~WorldBase() {}
 
   // Data insertion functions.
-  // TODO(helenol): Figure out which stereo parameters we need that aren't
-  // contained in the stereo_msgs::DisparityImage.
-  virtual void insertDisparityImage(
+  // Project the given disparity map to 3D and insert it into the map.
+  // Q is a 4x4 perspective disparity-to-depth mapping matrix for the full-size
+  // image. This takes care of adjusting Q for downsampled disparity maps as
+  // well.
+  // See: http://docs.opencv.org/modules/calib3d/doc/
+  //      camera_calibration_and_3d_reconstruction.html#reprojectimageto3d
+  void insertDisparityImage(
       const Transformation& sensor_to_world,
-      const stereo_msgs::DisparityImageConstPtr& disparity) {}
+      const stereo_msgs::DisparityImageConstPtr& disparity,
+      const Eigen::Matrix4d& Q_full, const Eigen::Vector2d& full_image_size);
+  void insertDisparityImage(const Transformation& sensor_to_world,
+      const cv::Mat& disparity, const Eigen::Matrix4d& Q_full,
+      const Eigen::Vector2d& full_image_size);
+
+  // Helper functions to compute the Q matrix for given camera parameters.
+  // Downsampling is handled in insertDisparityImage.
+  Eigen::Matrix4d getQForCameras(double baseline,
+      const Eigen::Matrix3d& left_cam_matrix,
+      const Eigen::Matrix3d& right_cam_matrix);
+  Eigen::Matrix4d getQForROSCameras(
+    const sensor_msgs::CameraInfo& left_camera,
+    const sensor_msgs::CameraInfo& right_camera);
 
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
@@ -79,6 +82,22 @@ class WorldBase {
                            std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max());
   }
+
+ protected:
+  // Called by insertDisparityImage(). Inheriting classes need to implement
+  // this.
+  // Input is the sensor to world transform and projected points in 3D in
+  // the sensor coordinate frame, of type CV_32FC3.
+  virtual void insertProjectedDisparityIntoMapImpl(
+      const Transformation& sensor_to_world,
+      const cv::Mat& projected_points) {}
+
+  // Generate Q matrix from parameters.
+  Eigen::Matrix4d generateQ(double Tx,
+  double left_cx, double left_cy,  double left_fx,  double left_fy,  double right_cx,
+  double right_cy,
+  double right_fx,
+  double right_fy);
 };
 
 }  // namespace volumetric_mapping
