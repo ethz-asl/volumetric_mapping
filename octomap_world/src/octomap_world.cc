@@ -10,6 +10,14 @@
 
 namespace volumetric_mapping {
 
+// Convenience functions for octomap point <-> eigen conversions.
+octomap::point3d pointEigenToOctomap(const Eigen::Vector3d& point) {
+  return octomap::point3d(point.x(), point.y(), point.z());
+}
+Eigen::Vector3d pointOctomapToEigen(const octomap::point3d& point) {
+  return Eigen::Vector3d(point.x(), point.y(), point.z());
+}
+
 // Create a default parameters object and call the other constructor with it.
 OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
@@ -63,9 +71,7 @@ void OctomapWorld::insertPointcloud(
   // Get the sensor origin in the world frame.
   Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
   sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
-  octomap::point3d sensor_origin(sensor_origin_eigen.x(),
-                                 sensor_origin_eigen.y(),
-                                 sensor_origin_eigen.z());
+  octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
 
   // Then add all the rays from this pointcloud.
   // We do this as a batch operation - so first get all the keys in a set, then
@@ -137,10 +143,8 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   Eigen::Vector3d bbx_min_eigen = point - bounding_box_size / 2;
   Eigen::Vector3d bbx_max_eigen = point + bounding_box_size / 2;
 
-  octomap::point3d bbx_min(bbx_min_eigen.x(), bbx_min_eigen.y(),
-                           bbx_min_eigen.z());
-  octomap::point3d bbx_max(bbx_max_eigen.x(), bbx_max_eigen.y(),
-                           bbx_max_eigen.z());
+  octomap::point3d bbx_min = pointEigenToOctomap(bbx_min_eigen);
+  octomap::point3d bbx_max = pointEigenToOctomap(bbx_max_eigen);
 
   for (octomap::OcTree::leaf_bbx_iterator
            iter = octree_->begin_leafs_bbx(bbx_min, bbx_max),
@@ -162,7 +166,6 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   if (unknown_centers.size() > 0) {
     return CellStatus::kUnknown;
   }
-
   return CellStatus::kFree;
 }
 
@@ -184,8 +187,8 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
-  octree_->computeRayKeys(octomap::point3d(start.x(), start.y(), start.z()),
-                          octomap::point3d(end.x(), end.y(), end.z()), key_ray);
+  octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(end),
+                          key_ray);
 
   // Now check if there are any unknown or occupied nodes in the ray.
   for (octomap::OcTreeKey key : key_ray) {
@@ -209,27 +212,26 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
 }
 
 double OctomapWorld::getResolution() const {
-  CHECK(octree_) << "Octree uninitialized!";
   return octree_->getResolution();
 }
 
 void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                                         const Eigen::Vector3d& bounding_box,
+                                         const Eigen::Vector3d& bounding_box_size,
                                          double log_odds_value) {
-  CHECK(octree_) << "Octree uninitialized!";
-
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  Eigen::Vector3d epsilon_3d;
+  epsilon_3d.setConstant(epsilon);
 
-  for (double x_position = position.x() - bounding_box.x() / 2 - epsilon;
-       x_position <= position.x() + bounding_box.x() / 2 + epsilon;
+  Eigen::Vector3d bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+  Eigen::Vector3d bbx_max = position + bounding_box_size / 2 + epsilon_3d;
+
+  for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
-    for (double y_position = position.y() - bounding_box.y() / 2 - epsilon;
-         y_position <= position.y() + bounding_box.y() / 2 + epsilon;
-         y_position += resolution) {
-      for (double z_position = position.z() - bounding_box.z() / 2 - epsilon;
-           z_position <= position.z() + bounding_box.z() / 2 + epsilon;
+    for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+        y_position += resolution) {
+      for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
            z_position += resolution) {
         octomap::point3d point =
             octomap::point3d(x_position, y_position, z_position);
@@ -292,7 +294,7 @@ bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
         if (current_key != key) {
           octomap::OcTreeNode* node = octree_->search(key);
           if (node && octree_->isNodeOccupied(node)) {
-            // we have a neighbor => not a speckle!
+            // We have a neighbor => not a speckle!
             return false;
           }
         }
