@@ -83,7 +83,7 @@ void OctomapWorld::insertPointcloud(
 }
 
 void OctomapWorld::insertProjectedDisparityIntoMapImpl(
-  const Transformation& sensor_to_world, const cv::Mat& projected_points) {
+    const Transformation& sensor_to_world, const cv::Mat& projected_points) {
 
   // Get the sensor origin in the world frame.
   Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
@@ -100,12 +100,12 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
         continue;
       }
 
-      Eigen::Vector3d point_eigen(row_pointer[u][0],
-                                  row_pointer[u][1], row_pointer[u][2]);
+      Eigen::Vector3d point_eigen(row_pointer[u][0], row_pointer[u][1],
+                                  row_pointer[u][2]);
       point_eigen = sensor_to_world * point_eigen;
 
-      castRay(sensor_origin, pointEigenToOctomap(point_eigen),
-              &free_cells, &occupied_cells);
+      castRay(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
+              &occupied_cells);
     }
   }
 
@@ -113,13 +113,14 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 }
 
 void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
-    const octomap::point3d& point,
-    octomap::KeySet* free_cells, octomap::KeySet* occupied_cells) const {
+                           const octomap::point3d& point,
+                           octomap::KeySet* free_cells,
+                           octomap::KeySet* occupied_cells) const {
   CHECK_NOTNULL(free_cells);
   CHECK_NOTNULL(occupied_cells);
 
   if (params_.sensor_max_range < 0.0 ||
-    (point - sensor_origin).norm() <= params_.sensor_max_range) {
+      (point - sensor_origin).norm() <= params_.sensor_max_range) {
 
     // Cast a ray to compute all the free cells.
     octomap::KeyRay key_ray;
@@ -149,7 +150,6 @@ bool OctomapWorld::isValidPoint(const cv::Vec3f& point) const {
   return point[2] != 10000.0f && !std::isinf(point[2]);
 }
 
-
 void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
                                    octomap::KeySet* occupied_cells) {
   CHECK_NOTNULL(free_cells);
@@ -177,7 +177,6 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
   }
   octree_->updateInnerOccupancy();
 }
-
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,

@@ -47,9 +47,9 @@ class WorldBase {
   Eigen::Matrix4d getQForCameras(double baseline,
                                  const Eigen::Matrix3d& left_cam_matrix,
                                  const Eigen::Matrix3d& right_cam_matrix) const;
-  Eigen::Matrix4d getQForROSCameras(
-      const sensor_msgs::CameraInfo& left_camera,
-      const sensor_msgs::CameraInfo& right_camera) const;
+  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
+                                    const sensor_msgs::CameraInfo& right_camera)
+      const;
 
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
@@ -95,7 +95,8 @@ class WorldBase {
   // Generate Q matrix from parameters.
   Eigen::Matrix4d generateQ(double Tx, double left_cx, double left_cy,
                             double left_fx, double left_fy, double right_cx,
-                            double right_cy, double right_fx, double right_fy) const;
+                            double right_cy, double right_fx,
+                            double right_fy) const;
 };
 
 }  // namespace volumetric_mapping

@@ -109,8 +109,8 @@ class OctomapWorld : public WorldBase {
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
-    const octomap::point3d& point, octomap::KeySet* free_cells,
-    octomap::KeySet* occupied_cells) const;
+               const octomap::point3d& point, octomap::KeySet* free_cells,
+               octomap::KeySet* occupied_cells) const;
   void updateOccupancy(octomap::KeySet* free_cells,
                        octomap::KeySet* occupied_cells);
   bool isValidPoint(const cv::Vec3f& point) const;
