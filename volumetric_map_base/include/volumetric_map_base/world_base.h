@@ -9,6 +9,22 @@ namespace volumetric_mapping {
 
 typedef kindr::minimal::QuatTransformation Transformation;
 
+// Minimum number of parameters that need to be known about the stereo camera
+// pair to project the disparity image into 3D.
+struct StereoCameraParameters {
+  StereoCameraParameters()
+      : baseline(0), focal_length(0), left_cx(0), left_cy(0), right_cx(0),
+        right_cy(0), image_width(0), image_height(0) {}
+  double baseline;
+  double focal_length;
+  double left_cx;
+  double left_cy;
+  double right_cx;
+  double right_cy;
+  int image_width;
+  int image_height;
+};
+
 // Base class for all 3D volumetric representations of the environment.
 // By default, implements a valid completely empty world.
 class WorldBase {

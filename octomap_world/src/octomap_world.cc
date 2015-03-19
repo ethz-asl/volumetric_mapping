@@ -162,7 +162,6 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   if (unknown_centers.size() > 0) {
     return CellStatus::kUnknown;
   }
-
   return CellStatus::kFree;
 }
 
