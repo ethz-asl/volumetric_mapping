@@ -81,8 +81,11 @@ class OctomapWorld : public WorldBase {
                                    const Eigen::Vector3d& end) const;
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-      const Eigen::Vector3d& bounding_box) const;
+      const Eigen::Vector3d& bounding_box_size) const;
+
   virtual double getResolution() const;
+  virtual Eigen::Vector3d getMapCenter() const;
+  virtual Eigen::Vector3d getMapSize() const;
 
   // Manually affect the probabilities of areas within a bounding box.
   void setLogOddsBoundingBox(const Eigen::Vector3d& position,

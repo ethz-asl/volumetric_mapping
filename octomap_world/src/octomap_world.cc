@@ -19,14 +19,16 @@ OctomapWorld::OctomapWorld(const OctomapParameters& params) {
 }
 
 void OctomapWorld::resetMap() {
-  CHECK(octree_) << "Octree uninitialized!";
+  if (!octree_) {
+    octree_.reset(new octomap::OcTree(params_.resolution));
+  }
   octree_->clear();
 }
 
 void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   if (octree_) {
     if (octree_->getResolution() != params.resolution) {
-      LOG(WARNING) << "Octomap resolution has changed! Deleting tree!";
+      LOG(WARNING) << "Octomap resolution has changed! Resetting tree!";
       octree_.reset(new octomap::OcTree(params.resolution));
     }
   } else {
@@ -98,20 +100,25 @@ void OctomapWorld::insertPointcloud(
     }
   }
 
-  // Mark free cells.
-  for (octomap::KeySet::iterator it = free_cells.begin(),
-                                 end = free_cells.end();
-       it != end; ++it) {
-    if (occupied_cells.find(*it) == occupied_cells.end()) {
-      octree_->updateNode(*it, false);
-    }
-  }
-
   // Mark occupied cells.
   for (octomap::KeySet::iterator it = occupied_cells.begin(),
                                  end = occupied_cells.end();
        it != end; it++) {
     octree_->updateNode(*it, true);
+
+    // Remove any occupied cells from free cells - assume there are far fewer
+    // occupied cells than free cells, so this is much faster than checking on
+    // every free cell.
+    if (free_cells.find(*it) != free_cells.end()) {
+      free_cells.erase(*it);
+    }
+  }
+
+  // Mark free cells.
+  for (octomap::KeySet::iterator it = free_cells.begin(),
+                                 end = free_cells.end();
+       it != end; ++it) {
+    octree_->updateNode(*it, false);
   }
 
   octree_->updateInnerOccupancy();
@@ -121,9 +128,6 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,
     const Eigen::Vector3d& bounding_box_size) const {
   // First case: center point is unknown or occupied. Can just quit.
-  // Weird thing: previous implementation does NOT test the bounding box for
-  // unknown nodes (in fact, this seems to be like... seriously non-trivial,
-  // given the leaf_bbx_interator implementation).
   CellStatus center_status = getCellStatusPoint(point);
   if (center_status != CellStatus::kFree) {
     return center_status;
@@ -150,6 +154,15 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
       }
     }
   }
+
+  // The above only returns valid nodes - we should check for unknown nodes as
+  // well.
+  octomap::point3d_list unknown_centers;
+  octree_->getUnknownLeafCenters(unknown_centers, bbx_min, bbx_max);
+  if (unknown_centers.size() > 0) {
+    return CellStatus::kUnknown;
+  }
+
   return CellStatus::kFree;
 }
 
@@ -188,7 +201,7 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
 
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-    const Eigen::Vector3d& bounding_box) const {
+    const Eigen::Vector3d& bounding_box_size) const {
   LOG(FATAL) << "TODO. This one is harder.";
   // TODO(helenol): Probably best way would be to get all the coordinates along
   // the line, then make a set of all the OcTreeKeys in all the bounding boxes
