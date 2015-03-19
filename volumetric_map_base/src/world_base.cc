@@ -49,7 +49,7 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
 // Also handles downsampled disparity maps.
 Eigen::Matrix4d WorldBase::getQForCameras(
     double baseline, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix) {
+    const Eigen::Matrix3d& right_cam_matrix) const {
   // TODO(helenol): check if this needs to be negative or positive.
   double Tx = -baseline;
   double left_cx = left_cam_matrix(0, 2);
@@ -67,7 +67,7 @@ Eigen::Matrix4d WorldBase::getQForCameras(
 
 Eigen::Matrix4d WorldBase::getQForROSCameras(
     const sensor_msgs::CameraInfo& left_camera,
-    const sensor_msgs::CameraInfo& right_camera) {
+    const sensor_msgs::CameraInfo& right_camera) const {
   // Unfortunately updateQ is protected in StereoCameraModel.
   image_geometry::StereoCameraModel stereo_model;
   stereo_model.fromCameraInfo(left_camera, right_camera);
@@ -89,7 +89,7 @@ Eigen::Matrix4d WorldBase::getQForROSCameras(
 Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
                                      double left_fx, double left_fy,
                                      double right_cx, double right_cy,
-                                     double right_fx, double right_fy) {
+                                     double right_fx, double right_fy) const {
   Eigen::Matrix4d Q = Eigen::Matrix4d::Zero();
 
   // Basically do the same that the stereo model does by hand:

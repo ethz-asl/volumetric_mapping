@@ -64,10 +64,6 @@ class OctomapWorld : public WorldBase {
   void setOctomapParameters(const OctomapParameters& params);
 
   // Virtual functions for inserting data.
-  virtual void insertDisparityImage(
-      const Transformation& sensor_to_world,
-      const stereo_msgs::DisparityImageConstPtr& disparity);
-
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
       const sensor_msgs::PointCloud2::ConstPtr& cloud);
@@ -102,9 +98,22 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
+ protected:
+  // Actual implementation for inserting disparity data.
+  virtual void insertProjectedDisparityIntoMapImpl(
+      const Transformation& sensor_to_world, const cv::Mat& projected_points);
+
  private:
   // Check if the node at the specified key has neighbors or not.
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
+
+  // Helper functions for building up a map from sensor data.
+  void castRay(const octomap::point3d& sensor_origin,
+    const octomap::point3d& point, octomap::KeySet* free_cells,
+    octomap::KeySet* occupied_cells) const;
+  void updateOccupancy(octomap::KeySet* free_cells,
+                       octomap::KeySet* occupied_cells);
+  bool isValidPoint(const cv::Vec3f& point) const;
 
   void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
