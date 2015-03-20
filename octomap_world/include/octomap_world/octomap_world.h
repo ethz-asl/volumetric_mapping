@@ -6,6 +6,8 @@
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
 #include <volumetric_map_base/world_base.h>
+#include <std_msgs/ColorRGBA.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace volumetric_mapping {
 
@@ -98,6 +100,13 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
+  // Helpers for publishing.
+  void generateMarkerArray(
+    const std::string& tf_frame,
+    visualization_msgs::MarkerArray* occupied_nodes,
+    visualization_msgs::MarkerArray* free_nodes);
+
+
  protected:
   // Actual implementation for inserting disparity data.
   virtual void insertProjectedDisparityIntoMapImpl(
@@ -117,6 +126,9 @@ class OctomapWorld : public WorldBase {
 
   void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
+
+  double colorizeMapByHeight(double z, double min_z, double max_z) const;
+  std_msgs::ColorRGBA percentToColor(double h) const;
 
   std::shared_ptr<octomap::OcTree> octree_;
 
