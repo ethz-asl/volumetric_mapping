@@ -53,12 +53,6 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   params_ = params;
 }
 
-void OctomapWorld::insertDisparityImage(
-    const Transformation& sensor_to_world,
-    const stereo_msgs::DisparityImageConstPtr& disparity) {
-  LOG(FATAL) << "TODO!";
-}
-
 void OctomapWorld::insertPointcloud(
     const Transformation& sensor_to_world,
     const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
@@ -81,52 +75,106 @@ void OctomapWorld::insertPointcloud(
        it != cloud->end(); ++it) {
     octomap::point3d point(it->x, it->y, it->z);
     // Check if this is within the allowed sensor range.
-    if (params_.sensor_max_range < 0.0 ||
-        (point - sensor_origin).norm() <= params_.sensor_max_range) {
+    castRay(sensor_origin, point, &free_cells, &occupied_cells);
+  }
 
-      // Cast a ray to compute all the free cells.
-      octomap::KeyRay key_ray;
-      if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
-        free_cells.insert(key_ray.begin(), key_ray.end());
+  // Apply the new free cells and occupied cells from
+  updateOccupancy(&free_cells, &occupied_cells);
+}
+
+void OctomapWorld::insertProjectedDisparityIntoMapImpl(
+    const Transformation& sensor_to_world, const cv::Mat& projected_points) {
+
+  // Get the sensor origin in the world frame.
+  Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
+  sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
+  octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
+
+  octomap::KeySet free_cells, occupied_cells;
+  for (int v = 0; v < projected_points.rows; ++v) {
+    const cv::Vec3f* row_pointer = projected_points.ptr<cv::Vec3f>(v);
+
+    for (int u = 0; u < projected_points.cols; ++u) {
+      // Check whether we're within the correct range for disparity.
+      if (!isValidPoint(row_pointer[u])) {
+        continue;
       }
-      // Mark endpoing as occupied.
-      octomap::OcTreeKey key;
-      if (octree_->coordToKeyChecked(point, key)) {
-        occupied_cells.insert(key);
-      }
-    } else {
-      // If the ray is longer than the max range, just update free space.
-      octomap::point3d new_end =
-          sensor_origin +
-          (point - sensor_origin).normalized() * params_.sensor_max_range;
-      octomap::KeyRay key_ray;
-      if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
-        free_cells.insert(key_ray.begin(), key_ray.end());
-      }
+
+      Eigen::Vector3d point_eigen(row_pointer[u][0], row_pointer[u][1],
+                                  row_pointer[u][2]);
+      point_eigen = sensor_to_world * point_eigen;
+
+      castRay(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
+              &occupied_cells);
     }
   }
 
+  updateOccupancy(&free_cells, &occupied_cells);
+}
+
+void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
+                           const octomap::point3d& point,
+                           octomap::KeySet* free_cells,
+                           octomap::KeySet* occupied_cells) const {
+  CHECK_NOTNULL(free_cells);
+  CHECK_NOTNULL(occupied_cells);
+
+  if (params_.sensor_max_range < 0.0 ||
+      (point - sensor_origin).norm() <= params_.sensor_max_range) {
+
+    // Cast a ray to compute all the free cells.
+    octomap::KeyRay key_ray;
+    if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
+      free_cells->insert(key_ray.begin(), key_ray.end());
+    }
+    // Mark endpoing as occupied.
+    octomap::OcTreeKey key;
+    if (octree_->coordToKeyChecked(point, key)) {
+      occupied_cells->insert(key);
+    }
+  } else {
+    // If the ray is longer than the max range, just update free space.
+    octomap::point3d new_end =
+        sensor_origin +
+        (point - sensor_origin).normalized() * params_.sensor_max_range;
+    octomap::KeyRay key_ray;
+    if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
+      free_cells->insert(key_ray.begin(), key_ray.end());
+    }
+  }
+}
+
+bool OctomapWorld::isValidPoint(const cv::Vec3f& point) const {
+  // Check both for disparities explicitly marked as invalid (where OpenCV maps
+  // pt.z to MISSING_Z) and zero disparities (point mapped to infinity).
+  return point[2] != 10000.0f && !std::isinf(point[2]);
+}
+
+void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
+                                   octomap::KeySet* occupied_cells) {
+  CHECK_NOTNULL(free_cells);
+  CHECK_NOTNULL(occupied_cells);
+
   // Mark occupied cells.
-  for (octomap::KeySet::iterator it = occupied_cells.begin(),
-                                 end = occupied_cells.end();
+  for (octomap::KeySet::iterator it = occupied_cells->begin(),
+                                 end = occupied_cells->end();
        it != end; it++) {
     octree_->updateNode(*it, true);
 
     // Remove any occupied cells from free cells - assume there are far fewer
     // occupied cells than free cells, so this is much faster than checking on
     // every free cell.
-    if (free_cells.find(*it) != free_cells.end()) {
-      free_cells.erase(*it);
+    if (free_cells->find(*it) != free_cells->end()) {
+      free_cells->erase(*it);
     }
   }
 
   // Mark free cells.
-  for (octomap::KeySet::iterator it = free_cells.begin(),
-                                 end = free_cells.end();
+  for (octomap::KeySet::iterator it = free_cells->begin(),
+                                 end = free_cells->end();
        it != end; ++it) {
     octree_->updateNode(*it, false);
   }
-
   octree_->updateInnerOccupancy();
 }
 
@@ -211,13 +259,11 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   // around the nodes... and then just go through and query once.
 }
 
-double OctomapWorld::getResolution() const {
-  return octree_->getResolution();
-}
+double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
-void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                                         const Eigen::Vector3d& bounding_box_size,
-                                         double log_odds_value) {
+void OctomapWorld::setLogOddsBoundingBox(
+    const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+    double log_odds_value) {
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
@@ -230,7 +276,7 @@ void OctomapWorld::setLogOddsBoundingBox(const Eigen::Vector3d& position,
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
     for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-        y_position += resolution) {
+         y_position += resolution) {
       for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
            z_position += resolution) {
         octomap::point3d point =
@@ -302,6 +348,144 @@ bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
     }
   }
   return true;
+}
+
+void OctomapWorld::generateMarkerArray(
+    const std::string& tf_frame,
+    visualization_msgs::MarkerArray* occupied_nodes,
+    visualization_msgs::MarkerArray* free_nodes) {
+  CHECK_NOTNULL(occupied_nodes);
+  CHECK_NOTNULL(free_nodes);
+
+  // Prune the octree first.
+  octree_->prune();
+  int tree_depth = octree_->getTreeDepth();
+
+  // In the marker array, assign each node to its respective depth level, since
+  // all markers in a CUBE_LIST must have the same scale.
+  occupied_nodes->markers.resize(tree_depth + 1);
+  free_nodes->markers.resize(tree_depth + 1);
+
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  for (int i = 0; i < tree_depth; ++i) {
+    double size = octree_->getNodeSize(i);
+
+    occupied_nodes->markers[i].header.frame_id = tf_frame;
+    occupied_nodes->markers[i].ns = "map";
+    occupied_nodes->markers[i].id = i;
+    occupied_nodes->markers[i].type = visualization_msgs::Marker::CUBE_LIST;
+    occupied_nodes->markers[i].scale.x = size;
+    occupied_nodes->markers[i].scale.y = size;
+    occupied_nodes->markers[i].scale.z = size;
+
+    free_nodes->markers[i] = occupied_nodes->markers[i];
+  }
+
+  for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs(),
+                                      end = octree_->end_leafs();
+       it != end; ++it) {
+    geometry_msgs::Point cube_center;
+    cube_center.x = it.getX();
+    cube_center.y = it.getY();
+    cube_center.z = it.getZ();
+
+    int depth_level = it.getDepth();
+
+    if (octree_->isNodeOccupied(*it)) {
+      occupied_nodes->markers[depth_level].points.push_back(cube_center);
+      occupied_nodes->markers[depth_level].colors.push_back(
+          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
+    } else {
+      occupied_nodes->markers[depth_level].points.push_back(cube_center);
+      occupied_nodes->markers[depth_level].colors.push_back(
+          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
+    }
+  }
+
+  for (int i = 0; i < tree_depth; ++i) {
+    if (occupied_nodes->markers[i].points.size() > 0) {
+      occupied_nodes->markers[i].action = visualization_msgs::Marker::ADD;
+    } else {
+      occupied_nodes->markers[i].action = visualization_msgs::Marker::DELETE;
+    }
+
+    if (free_nodes->markers[i].points.size() > 0) {
+      free_nodes->markers[i].action = visualization_msgs::Marker::ADD;
+    } else {
+      free_nodes->markers[i].action = visualization_msgs::Marker::DELETE;
+    }
+  }
+}
+
+double OctomapWorld::colorizeMapByHeight(double z, double min_z,
+                                         double max_z) const {
+  return (1.0 - std::min(std::max((z - min_z) / (max_z - min_z), 0.0), 1.0));
+}
+
+std_msgs::ColorRGBA OctomapWorld::percentToColor(double h) const {
+  // Helen's note: direct copy from OctomapProvider.
+  std_msgs::ColorRGBA color;
+  color.a = 1.0;
+  // blend over HSV-values (more colors)
+
+  double s = 1.0;
+  double v = 1.0;
+
+  h -= floor(h);
+  h *= 6;
+  int i;
+  double m, n, f;
+
+  i = floor(h);
+  f = h - i;
+  if (!(i & 1)) f = 1 - f;  // if i is even
+  m = v * (1 - s);
+  n = v * (1 - s * f);
+
+  switch (i) {
+    case 6:
+    case 0:
+      color.r = v;
+      color.g = n;
+      color.b = m;
+      break;
+    case 1:
+      color.r = n;
+      color.g = v;
+      color.b = m;
+      break;
+    case 2:
+      color.r = m;
+      color.g = v;
+      color.b = n;
+      break;
+    case 3:
+      color.r = m;
+      color.g = n;
+      color.b = v;
+      break;
+    case 4:
+      color.r = n;
+      color.g = m;
+      color.b = v;
+      break;
+    case 5:
+      color.r = v;
+      color.g = m;
+      color.b = n;
+      break;
+    default:
+      color.r = 1;
+      color.g = 0.5;
+      color.b = 0.5;
+      break;
+  }
+
+  return color;
 }
 
 }  // namespace volumetric_mapping
