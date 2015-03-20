@@ -14,6 +14,14 @@ cs_add_library(${PROJECT_NAME}
   src/octomap_manager.cc
 )
 
+############
+# BINARIES #
+############
+cs_add_executable(octomap_manager
+  src/octomap_manager_node.cc
+)
+target_link_libraries(octomap_manager ${PROJECT_NAME})
+
 ##########
 # EXPORT #
 ##########

@@ -30,9 +30,9 @@ class OctomapManager : public OctomapWorld {
   void rightCameraInfoCallback(const sensor_msgs::CameraInfoPtr& right_info);
 
   // Service callbacks.
-  void resetMapCallback(std_srvs::Empty::Request& request,
+  bool resetMapCallback(std_srvs::Empty::Request& request,
                         std_srvs::Empty::Response& response);
-  void publishAllCallback(std_srvs::Empty::Request& request,
+  bool publishAllCallback(std_srvs::Empty::Request& request,
                           std_srvs::Empty::Response& response);
   void saveTreeCallback();
   void loadTreeCallback();

@@ -84,7 +84,6 @@ void OctomapWorld::insertPointcloud(
 
 void OctomapWorld::insertProjectedDisparityIntoMapImpl(
     const Transformation& sensor_to_world, const cv::Mat& projected_points) {
-
   // Get the sensor origin in the world frame.
   Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
   sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
@@ -400,8 +399,8 @@ void OctomapWorld::generateMarkerArray(
       occupied_nodes->markers[depth_level].colors.push_back(
           percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
     } else {
-      occupied_nodes->markers[depth_level].points.push_back(cube_center);
-      occupied_nodes->markers[depth_level].colors.push_back(
+      free_nodes->markers[depth_level].points.push_back(cube_center);
+      free_nodes->markers[depth_level].colors.push_back(
           percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
     }
   }
@@ -486,6 +485,27 @@ std_msgs::ColorRGBA OctomapWorld::percentToColor(double h) const {
   }
 
   return color;
+}
+
+Eigen::Vector3d OctomapWorld::getMapCenter() const {
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  Eigen::Vector3d min_3d(min_x, min_y, min_z);
+  Eigen::Vector3d max_3d(max_x, max_y, max_z);
+
+  return min_3d + (max_3d - min_3d)/2;
+}
+
+Eigen::Vector3d OctomapWorld::getMapSize() const {
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  return Eigen::Vector3d(max_x - min_x, max_y - min_y, max_z - min_z);
 }
 
 }  // namespace volumetric_mapping
