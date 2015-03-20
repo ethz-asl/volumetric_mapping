@@ -25,24 +25,29 @@ void OctomapManager::subscribe() {
   disparity_sub_ = nh_.subscribe(
       "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
 }
+
 void OctomapManager::advertiseServices() {}
 void OctomapManager::advertisePublishers() {}
+
 void OctomapManager::publishAll() {}
 void OctomapManager::publishOccupied() {}
 void OctomapManager::publishFree() {}
 void OctomapManager::publishUnknown() {}
+
 void OctomapManager::resetMapCallback() {}
 void OctomapManager::publishAllCallback() {}
 void OctomapManager::saveTreeCallback() {}
 void OctomapManager::loadTreeCallback() {}
 
-void OctomapManager::leftCameraInfoCallback(const sensor_msgs::CameraInfoPtr& left_info) {
+void OctomapManager::leftCameraInfoCallback(
+    const sensor_msgs::CameraInfoPtr& left_info) {
   left_info_ = left_info;
   if (left_info_ && right_info_) {
     calculateQ();
   }
 }
-void OctomapManager::rightCameraInfoCallback(const sensor_msgs::CameraInfoPtr& right_info) {
+void OctomapManager::rightCameraInfoCallback(
+    const sensor_msgs::CameraInfoPtr& right_info) {
   right_info_ = right_info;
   if (left_info_ && right_info_) {
     calculateQ();

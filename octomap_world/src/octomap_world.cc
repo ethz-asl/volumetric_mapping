@@ -350,4 +350,141 @@ bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
   return true;
 }
 
+void OctomapWorld::generateMarkerArray() {
+  visualization_msgs::MarkerArray occupied_nodes;
+  visualization_msgs::MarkerArray free_nodes;
+
+  // Prune the octree first.
+  octree_->prune();
+  int tree_depth = octree_->getTreeDepth();
+
+  // In the marker array, assign each node to its respective depth level, since
+  // all markers in a CUBE_LIST must have the same scale.
+  occupied_nodes.markers.resize(tree_depth + 1);
+  free_nodes.markers.resize(tree_depth + 1);
+
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  for (int i = 0; i < tree_depth; ++i) {
+    double size = octree_->getNodeSize(i);
+
+    occupied_nodes.markers[i].header.frame_id = world_frame;
+    occupied_nodes.markers[i].ns = "map";
+    occupied_nodes.markers[i].id = i;
+    occupied_nodes.markers[i].type =
+            visualization_msgs::Marker::CUBE_LIST;
+    occupied_nodes.markers[i].scale.x = size;
+    occupied_nodes.markers[i].scale.y = size;
+    occupied_nodes.markers[i].scale.z = size;
+
+    free_nodes.markers[i] = occupied_nodes.markers[i];
+  }
+
+  for (OcTree::iterator it = octree_->begin_leafs(),
+       end = octree_->end_leafs(); it != end; ++it) {
+    geometry_msgs::Point cube_center;
+    cube_center.x = it.getX();
+    cube_center.y = it.getY();
+    cube_center.z = it.getZ();
+
+    int depth_level = it.getDepth();
+
+    if (octree_->isNodeOccupied(*it)) {
+      occupied_nodes.markers[depth_level].points.push_back(cube_center);
+      occupied_nodes.markers[depth_level].colors.push_back(
+          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z));
+    } else {
+      occupied_nodes.markers[depth_level].points.push_back(cube_center);
+      occupied_nodes.markers[depth_level].colors.push_back(
+          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z));
+    }
+  }
+
+
+  for (int i = 0; i < tree_depth; ++i) {
+    if (occupied_nodes.markers[i].points.size() > 0) {
+          occupied_nodes.markers[i].action = visualization_msgs::Marker::ADD;
+    } else {
+        occupied_nodes.markers[i].action =
+              visualization_msgs::Marker::DELETE;
+    }
+
+    if (free_nodes.markers[i].points.size() > 0) {
+          free_nodes.markers[i].action = visualization_msgs::Marker::ADD;
+    } else {
+        free_nodes.markers[i].action =
+              visualization_msgs::Marker::DELETE;
+    }
+  }
+}
+
+double OctomapWorld::colorizeMapByHeight(double z, double min_z, double max_z) {
+  return (1.0 - std::min(std::max((z - min_z) / (max_z - min_z), 0.0), 1.0));
+}
+
+std_msgs::ColorRGBA OctomapProvider::percentToColor(double h) {
+  // Helen's note: yep I have nooooo idea how this works, leaving as is.
+  std_msgs::ColorRGBA color;
+  color.a = 1.0;
+  // blend over HSV-values (more colors)
+
+  double s = 1.0;
+  double v = 1.0;
+
+  h -= floor(h);
+  h *= 6;
+  int i;
+  double m, n, f;
+
+  i = floor(h);
+  f = h - i;
+  if (!(i & 1)) f = 1 - f;  // if i is even
+  m = v * (1 - s);
+  n = v * (1 - s * f);
+
+  switch (i) {
+    case 6:
+    case 0:
+      color.r = v;
+      color.g = n;
+      color.b = m;
+      break;
+    case 1:
+      color.r = n;
+      color.g = v;
+      color.b = m;
+      break;
+    case 2:
+      color.r = m;
+      color.g = v;
+      color.b = n;
+      break;
+    case 3:
+      color.r = m;
+      color.g = n;
+      color.b = v;
+      break;
+    case 4:
+      color.r = n;
+      color.g = m;
+      color.b = v;
+      break;
+    case 5:
+      color.r = v;
+      color.g = m;
+      color.b = n;
+      break;
+    default:
+      color.r = 1;
+      color.g = 0.5;
+      color.b = 0.5;
+      break;
+  }
+
+  return color;
+}
+
 }  // namespace volumetric_mapping

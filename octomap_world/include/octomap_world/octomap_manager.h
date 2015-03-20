@@ -4,6 +4,7 @@
 #include "octomap_world/octomap_world.h"
 
 #include <tf/transform_listener.h>
+#include <std_srvs/Empty.h>
 
 namespace volumetric_mapping {
 
