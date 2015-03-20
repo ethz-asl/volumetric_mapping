@@ -173,7 +173,7 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
   for (octomap::KeySet::iterator it = free_cells->begin(),
                                  end = free_cells->end();
        it != end; ++it) {
-    octree_->updateNode(*it, true);
+    octree_->updateNode(*it, false);
   }
   octree_->updateInnerOccupancy();
 }
