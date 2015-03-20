@@ -18,9 +18,6 @@ class OctomapManager : public OctomapWorld {
   OctomapManager(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   void publishAll();
-  void publishOccupied();
-  void publishFree();
-  void publishUnknown();
 
   // Data insertion callbacks with TF frame resolution through the listener.
   void insertDisparityImageWithTf(
@@ -33,8 +30,10 @@ class OctomapManager : public OctomapWorld {
   void rightCameraInfoCallback(const sensor_msgs::CameraInfoPtr& right_info);
 
   // Service callbacks.
-  void resetMapCallback();
-  void publishAllCallback();
+  void resetMapCallback(std_srvs::Empty::Request& request,
+                                        std_srvs::Empty::Response& response);
+  void publishAllCallback(std_srvs::Empty::Request& request,
+                                        std_srvs::Empty::Response& response);
   void saveTreeCallback();
   void loadTreeCallback();
 
@@ -70,9 +69,8 @@ class OctomapManager : public OctomapWorld {
   ros::Publisher full_map_pub_;
 
   // Publish markers for visualization.
-  ros::Publisher occupied_cells_pub_;
-  ros::Publisher free_cells_pub_;
-  ros::Publisher unknown_cells_pub_;
+  ros::Publisher occupied_nodes_pub_;
+  ros::Publisher free_nodes_pub_;
 
   // Services!
   ros::ServiceServer reset_map_service_;

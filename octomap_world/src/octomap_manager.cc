@@ -7,7 +7,8 @@ namespace volumetric_mapping {
 
 OctomapManager::OctomapManager(const ros::NodeHandle& nh,
                                const ros::NodeHandle& nh_private)
-  : nh_(nh), nh_private_(nh_private), Q_(Eigen::Matrix4d::Identity()) {
+  : nh_(nh), nh_private_(nh_private), world_frame_("map"),
+    Q_(Eigen::Matrix4d::Identity()) {
   subscribe();
   advertiseServices();
   advertisePublishers();
@@ -27,15 +28,31 @@ void OctomapManager::subscribe() {
 }
 
 void OctomapManager::advertiseServices() {}
-void OctomapManager::advertisePublishers() {}
+void OctomapManager::advertisePublishers() {
+  occupied_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
+            "octomap_occupied", 1, true);
+  free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
+            "octomap_free", 1, true);
+}
 
-void OctomapManager::publishAll() {}
-void OctomapManager::publishOccupied() {}
-void OctomapManager::publishFree() {}
-void OctomapManager::publishUnknown() {}
+void OctomapManager::publishAll() {
+  visualization_msgs::MarkerArray occupied_nodes, free_nodes;
+  generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
 
-void OctomapManager::resetMapCallback() {}
-void OctomapManager::publishAllCallback() {}
+  occupied_nodes_pub_.publish(occupied_nodes);
+  free_nodes_pub_.publish(free_nodes);
+}
+
+void OctomapManager::resetMapCallback(std_srvs::Empty::Request& request,
+                                      std_srvs::Empty::Response& response) {
+  resetMap();
+}
+
+void OctomapManager::publishAllCallback(std_srvs::Empty::Request& request,
+                                        std_srvs::Empty::Response& response) {
+  publishAll();
+}
+
 void OctomapManager::saveTreeCallback() {}
 void OctomapManager::loadTreeCallback() {}
 
