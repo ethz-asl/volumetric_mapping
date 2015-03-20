@@ -7,32 +7,32 @@ namespace volumetric_mapping {
 
 OctomapManager::OctomapManager(const ros::NodeHandle& nh,
                                const ros::NodeHandle& nh_private)
-  : nh_(nh), nh_private_(nh_private), world_frame_("map"),
-    Q_(Eigen::Matrix4d::Identity()) {
+    : nh_(nh),
+      nh_private_(nh_private),
+      world_frame_("map"),
+      Q_(Eigen::Matrix4d::Identity()) {
   subscribe();
   advertiseServices();
   advertisePublishers();
 }
 
 void OctomapManager::subscribe() {
-  left_info_sub_ =
-    nh_.subscribe("cam0/camera_info", 1,
-                  &OctomapManager::leftCameraInfoCallback, this);
-  right_info_sub_ =
-    nh_.subscribe("cam1/camera_info", 1,
-                    &OctomapManager::rightCameraInfoCallback, this);
+  left_info_sub_ = nh_.subscribe("cam0/camera_info", 1,
+                                 &OctomapManager::leftCameraInfoCallback, this);
+  right_info_sub_ = nh_.subscribe(
+      "cam1/camera_info", 1, &OctomapManager::rightCameraInfoCallback, this);
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
-  disparity_sub_ = nh_.subscribe(
-      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+  disparity_sub_ = nh_.subscribe("pointcloud", 40,
+                                 &OctomapManager::insertPointcloudWithTf, this);
 }
 
 void OctomapManager::advertiseServices() {}
 void OctomapManager::advertisePublishers() {
   occupied_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-            "octomap_occupied", 1, true);
+      "octomap_occupied", 1, true);
   free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-            "octomap_free", 1, true);
+      "octomap_free", 1, true);
 }
 
 void OctomapManager::publishAll() {
@@ -108,12 +108,11 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      Transformation* transform) {
   tf::StampedTransform tf_transform;
   try {
-    tf_listener_.lookupTransform(to_frame, from_frame, timestamp,
-                                 tf_transform);
+    tf_listener_.lookupTransform(to_frame, from_frame, timestamp, tf_transform);
   }
   catch (tf::TransformException& ex) {
-    ROS_ERROR_STREAM("Error getting TF transform from sensor data: "
-                     << ex.what() << ".");
+    ROS_ERROR_STREAM(
+        "Error getting TF transform from sensor data: " << ex.what() << ".");
     return false;
   }
   return true;

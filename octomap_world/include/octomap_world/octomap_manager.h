@@ -31,9 +31,9 @@ class OctomapManager : public OctomapWorld {
 
   // Service callbacks.
   void resetMapCallback(std_srvs::Empty::Request& request,
-                                        std_srvs::Empty::Response& response);
+                        std_srvs::Empty::Response& response);
   void publishAllCallback(std_srvs::Empty::Request& request,
-                                        std_srvs::Empty::Response& response);
+                          std_srvs::Empty::Response& response);
   void saveTreeCallback();
   void loadTreeCallback();
 
@@ -45,9 +45,8 @@ class OctomapManager : public OctomapWorld {
 
   void calculateQ();
   bool lookupTransform(const std::string& from_frame,
-                                     const std::string& to_frame,
-                                     const ros::Time& timestamp,
-                                     Transformation* transform);
+                       const std::string& to_frame, const ros::Time& timestamp,
+                       Transformation* transform);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;

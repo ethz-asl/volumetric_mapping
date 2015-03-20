@@ -377,8 +377,7 @@ void OctomapWorld::generateMarkerArray(
     occupied_nodes->markers[i].header.frame_id = tf_frame;
     occupied_nodes->markers[i].ns = "map";
     occupied_nodes->markers[i].id = i;
-    occupied_nodes->markers[i].type =
-            visualization_msgs::Marker::CUBE_LIST;
+    occupied_nodes->markers[i].type = visualization_msgs::Marker::CUBE_LIST;
     occupied_nodes->markers[i].scale.x = size;
     occupied_nodes->markers[i].scale.y = size;
     occupied_nodes->markers[i].scale.z = size;
@@ -387,7 +386,8 @@ void OctomapWorld::generateMarkerArray(
   }
 
   for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs(),
-       end = octree_->end_leafs(); it != end; ++it) {
+                                      end = octree_->end_leafs();
+       it != end; ++it) {
     geometry_msgs::Point cube_center;
     cube_center.x = it.getX();
     cube_center.y = it.getY();
@@ -408,22 +408,21 @@ void OctomapWorld::generateMarkerArray(
 
   for (int i = 0; i < tree_depth; ++i) {
     if (occupied_nodes->markers[i].points.size() > 0) {
-          occupied_nodes->markers[i].action = visualization_msgs::Marker::ADD;
+      occupied_nodes->markers[i].action = visualization_msgs::Marker::ADD;
     } else {
-        occupied_nodes->markers[i].action =
-              visualization_msgs::Marker::DELETE;
+      occupied_nodes->markers[i].action = visualization_msgs::Marker::DELETE;
     }
 
     if (free_nodes->markers[i].points.size() > 0) {
-          free_nodes->markers[i].action = visualization_msgs::Marker::ADD;
+      free_nodes->markers[i].action = visualization_msgs::Marker::ADD;
     } else {
-        free_nodes->markers[i].action =
-              visualization_msgs::Marker::DELETE;
+      free_nodes->markers[i].action = visualization_msgs::Marker::DELETE;
     }
   }
 }
 
-double OctomapWorld::colorizeMapByHeight(double z, double min_z, double max_z) const {
+double OctomapWorld::colorizeMapByHeight(double z, double min_z,
+                                         double max_z) const {
   return (1.0 - std::min(std::max((z - min_z) / (max_z - min_z), 0.0), 1.0));
 }
 

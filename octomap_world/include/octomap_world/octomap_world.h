@@ -101,11 +101,9 @@ class OctomapWorld : public WorldBase {
   bool writeOctomapToFile(const std::string& filename);
 
   // Helpers for publishing.
-  void generateMarkerArray(
-    const std::string& tf_frame,
-    visualization_msgs::MarkerArray* occupied_nodes,
-    visualization_msgs::MarkerArray* free_nodes);
-
+  void generateMarkerArray(const std::string& tf_frame,
+                           visualization_msgs::MarkerArray* occupied_nodes,
+                           visualization_msgs::MarkerArray* free_nodes);
 
  protected:
   // Actual implementation for inserting disparity data.

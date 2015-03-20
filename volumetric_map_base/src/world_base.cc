@@ -26,11 +26,13 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
   Eigen::Matrix4d Q = Q_full;
   if (fabs(downsampling_factor - 1.0) > 1e-6) {
     // c{x,y} and f{x,y} are scaled by the downsampling factor then.
+    const double downsampling_squared =
+        downsampling_factor * downsampling_factor;
     Q(0, 0) /= downsampling_factor;
-    Q(0, 3) /= downsampling_factor * downsampling_factor;
+    Q(0, 3) /= downsampling_squared;
     Q(1, 1) /= downsampling_factor;
-    Q(1, 3) /= downsampling_factor * downsampling_factor;
-    Q(2, 3) /= downsampling_factor * downsampling_factor;
+    Q(1, 3) /= downsampling_squared;
+    Q(2, 3) /= downsampling_squared;
     Q(3, 2) /= downsampling_factor;
     Q(3, 3) /= downsampling_factor;
   }

@@ -47,9 +47,9 @@ class WorldBase {
   Eigen::Matrix4d getQForCameras(double baseline,
                                  const Eigen::Matrix3d& left_cam_matrix,
                                  const Eigen::Matrix3d& right_cam_matrix) const;
-  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
-                                    const sensor_msgs::CameraInfo& right_camera)
-      const;
+  Eigen::Matrix4d getQForROSCameras(
+      const sensor_msgs::CameraInfo& left_camera,
+      const sensor_msgs::CameraInfo& right_camera) const;
 
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
@@ -90,7 +90,9 @@ class WorldBase {
   // Input is the sensor to world transform and projected points in 3D in
   // the sensor coordinate frame, of type CV_32FC3.
   virtual void insertProjectedDisparityIntoMapImpl(
-      const Transformation& sensor_to_world, const cv::Mat& projected_points) {}
+      const Transformation& sensor_to_world, const cv::Mat& projected_points) {
+    LOG(ERROR) << "Calling unimplemented disparity insertion!";
+  }
 
   // Generate Q matrix from parameters.
   Eigen::Matrix4d generateQ(double Tx, double left_cx, double left_cy,
