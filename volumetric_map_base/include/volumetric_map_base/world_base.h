@@ -46,10 +46,14 @@ class WorldBase {
   }
 
   virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
-                                   const Eigen::Vector3d& end);
+                                   const Eigen::Vector3d& end) const {
+    return CellStatus::kFree;
+  }
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-      const Eigen::Vector3d& bounding_box);
+      const Eigen::Vector3d& bounding_box) const {
+    return CellStatus::kFree;
+  }
 
   virtual Eigen::Vector3d getMapCenter() const {
     return Eigen::Vector3d::Zero();

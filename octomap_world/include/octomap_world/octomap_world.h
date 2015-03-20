@@ -10,8 +10,16 @@
 namespace volumetric_mapping {
 
 struct OctomapParameters {
-  OctomapParameters() {
+  OctomapParameters()
+      : resolution(0.05),
+        probability_hit(0.7),
+        probability_miss(0.4),
+        threshold_min(0.12),
+        threshold_max(0.97),
+        filter_speckles(true),
+        sensor_max_range(10.0) {
     // Set reasonable defaults here...
+    // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
 
   // Resolution for the Octree. It is not possible to change this without
@@ -25,8 +33,12 @@ struct OctomapParameters {
   double threshold_min;
   double threshold_max;
 
+  // Filter neighbor-less nodes as 'speckles'.
   bool filter_speckles;
-  // TODO(helenol): fill rest in.
+
+  // Maximum range to allow a sensor measurement. Negative values to not
+  // filter.
+  double sensor_max_range;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
@@ -38,12 +50,11 @@ class OctomapWorld : public WorldBase {
   typedef std::shared_ptr<OctomapWorld> Ptr;
 
  public:
-  // Default constructor - if this one is called, you MUST call
-  // setOctomapParameters() before calling any other functions.
-  OctomapWorld() {}
+  // Default constructor - creates a valid octree using parameter defaults.
+  OctomapWorld();
 
   // Creates an octomap with the correct parameters.
-  OctomapWorld(const OctomapParameters& params) {}
+  OctomapWorld(const OctomapParameters& params);
   virtual ~OctomapWorld() {}
 
   // General map management.
@@ -66,10 +77,18 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& point,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
+  virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
+                                   const Eigen::Vector3d& end) const;
+  virtual CellStatus getLineStatusBoundingBox(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& bounding_box_size) const;
+
   virtual double getResolution() const;
+  virtual Eigen::Vector3d getMapCenter() const;
+  virtual Eigen::Vector3d getMapSize() const;
 
   // Manually affect the probabilities of areas within a bounding box.
-  void SetLogOddsBoundingBox(const Eigen::Vector3d& position,
+  void setLogOddsBoundingBox(const Eigen::Vector3d& position,
                              const Eigen::Vector3d& bounding_box_size,
                              double log_odds_value);
 
@@ -81,13 +100,18 @@ class OctomapWorld : public WorldBase {
 
   // Loading and writing to disk.
   bool loadOctomapFromFile(const std::string& filename);
-  bool writeOctomapToFile(const std::string& filename) const;
+  bool writeOctomapToFile(const std::string& filename);
 
  private:
+  // Check if the node at the specified key has neighbors or not.
+  bool isSpeckleNode(const octomap::OcTreeKey& key) const;
+
   void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
 
   std::shared_ptr<octomap::OcTree> octree_;
+
+  OctomapParameters params_;
 };
 
 }  // namespace volumetric_mapping
