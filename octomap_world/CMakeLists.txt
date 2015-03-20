@@ -11,6 +11,7 @@ add_definitions(-std=c++11)
 #############
 cs_add_library(${PROJECT_NAME}
   src/octomap_world.cc
+  src/octomap_manager.cc
 )
 
 ##########
