@@ -47,24 +47,38 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
   insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
 }
 
-// Helper functions to compute the Q matrix for given camera parameters.
-// Also handles downsampled disparity maps.
+// Helper functions to compute the Q matrix for given UNRECTIFIED camera parameters.
+// Assumes 0 distortion.
 Eigen::Matrix4d WorldBase::getQForCameras(
-    double baseline, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix) const {
-  // TODO(helenol): check if this needs to be negative or positive.
-  double Tx = -baseline;
-  double left_cx = left_cam_matrix(0, 2);
-  double left_cy = left_cam_matrix(1, 2);
-  double left_fx = left_cam_matrix(0, 0);
-  double left_fy = left_cam_matrix(1, 1);
-  double right_cx = right_cam_matrix(0, 2);
-  double right_cy = right_cam_matrix(1, 2);
-  double right_fx = right_cam_matrix(0, 0);
-  double right_fy = right_cam_matrix(1, 1);
+    const Transformation& T_C1_C0, const Eigen::Matrix3d& left_cam_matrix,
+    const Eigen::Matrix3d& right_cam_matrix, const Eigen::Vector2d& full_image_size) const {
+  // So unfortunately... Have to actually stereo rectify this pair.
+  // Input matrices: C = camera matrix (3x3), D = disortion coefficients (5x1),
+  // R = rotation matrix between cameras (3x3), T = translation between cameras
+  // (3x1).
+  cv::Mat C0, D0, C1, D1, R, T;
+  // For now, ignore distortion coefficients.
+  Eigen::Matrix<double, 5, 1> distortion = Eigen::Matrix<double, 5, 1>::Zero();
 
-  return generateQ(Tx, left_cx, left_cy, left_fx, left_fy, right_cx, right_cy,
-                   right_fx, right_fy);
+  // Output parameters.
+  cv::Mat R0, R1, P0, P1, Q_cv;
+
+  cv::eigen2cv(left_cam_matrix, C0);
+  cv::eigen2cv(right_cam_matrix, C1);
+  cv::eigen2cv(distortion, D0);
+  cv::eigen2cv(distortion, D1);
+  cv::eigen2cv(T_C1_C0.getRotationMatrix(), R);
+  cv::eigen2cv(T_C1_C0.getPosition(), T);
+  cv::Size img_size(full_image_size.x(), full_image_size.y());
+
+  cv::Rect roi1, roi2;
+  // Stereo rectify:
+  cv::stereoRectify(C0, D0, C1, D1, img_size, R, T, R0, R1, P0, P1, Q_cv,
+                    cv::CALIB_ZERO_DISPARITY, 0, img_size, &roi1, &roi2);
+
+  Eigen::Matrix4d Q;
+  cv::cv2eigen(Q_cv, Q);
+  return Q;
 }
 
 Eigen::Matrix4d WorldBase::getQForROSCameras(

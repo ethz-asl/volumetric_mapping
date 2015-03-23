@@ -13,13 +13,13 @@ namespace volumetric_mapping {
 
 struct OctomapParameters {
   OctomapParameters()
-      : resolution(0.05),
-        probability_hit(0.7),
+      : resolution(0.15),
+        probability_hit(0.65),
         probability_miss(0.4),
         threshold_min(0.12),
         threshold_max(0.97),
         filter_speckles(true),
-        sensor_max_range(10.0) {
+        sensor_max_range(5.0) {
     // Set reasonable defaults here...
     // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
@@ -61,6 +61,7 @@ class OctomapWorld : public WorldBase {
 
   // General map management.
   void resetMap();
+  void prune();
   // Creates an octomap if one is not yet created or if the resolution of the
   // current varies from the parameters requested.
   void setOctomapParameters(const OctomapParameters& params);

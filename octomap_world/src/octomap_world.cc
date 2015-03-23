@@ -33,6 +33,10 @@ void OctomapWorld::resetMap() {
   octree_->clear();
 }
 
+void OctomapWorld::prune() {
+  octree_->prune();
+}
+
 void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   if (octree_) {
     if (octree_->getResolution() != params.resolution) {
@@ -95,19 +99,18 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 
     for (int u = 0; u < projected_points.cols; ++u) {
       // Check whether we're within the correct range for disparity.
-      if (!isValidPoint(row_pointer[u])) {
+      if (!isValidPoint(row_pointer[u]) || row_pointer[u][2] < 0) {
         continue;
       }
-
       Eigen::Vector3d point_eigen(row_pointer[u][0], row_pointer[u][1],
                                   row_pointer[u][2]);
+
       point_eigen = sensor_to_world * point_eigen;
 
       castRay(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
               &occupied_cells);
     }
   }
-
   updateOccupancy(&free_cells, &occupied_cells);
 }
 
@@ -358,12 +361,12 @@ void OctomapWorld::generateMarkerArray(
 
   // Prune the octree first.
   octree_->prune();
-  int tree_depth = octree_->getTreeDepth();
+  int tree_depth = octree_->getTreeDepth() + 1;
 
   // In the marker array, assign each node to its respective depth level, since
   // all markers in a CUBE_LIST must have the same scale.
-  occupied_nodes->markers.resize(tree_depth + 1);
-  free_nodes->markers.resize(tree_depth + 1);
+  occupied_nodes->markers.resize(tree_depth);
+  free_nodes->markers.resize(tree_depth);
 
   // Metric min and max z of the map:
   double min_x, min_y, min_z, max_x, max_y, max_z;
