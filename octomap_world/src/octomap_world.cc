@@ -260,6 +260,16 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
 
 double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
+void OctomapWorld::setFree(const Eigen::Vector3d& position,
+    const Eigen::Vector3d& bounding_box_size) {
+  setLogOddsBoundingBox(position, bounding_box_size, octree_->getClampingThresMinLog());
+}
+
+void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
+    const Eigen::Vector3d& bounding_box_size) {
+  setLogOddsBoundingBox(position, bounding_box_size, octree_->getClampingThresMaxLog());
+}
+
 void OctomapWorld::setLogOddsBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
     double log_odds_value) {
