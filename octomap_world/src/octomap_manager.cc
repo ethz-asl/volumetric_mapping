@@ -9,8 +9,10 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
                                const ros::NodeHandle& nh_private)
     : nh_(nh),
       nh_private_(nh_private),
-      world_frame_("map"),
+      world_frame_("world"),
       Q_(Eigen::Matrix4d::Identity()) {
+  // TODO(helenol): populate parameters from param server.
+
   subscribe();
   advertiseServices();
   advertisePublishers();
@@ -23,11 +25,17 @@ void OctomapManager::subscribe() {
       "cam1/camera_info", 1, &OctomapManager::rightCameraInfoCallback, this);
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
-  disparity_sub_ = nh_.subscribe("pointcloud", 40,
+  pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                  &OctomapManager::insertPointcloudWithTf, this);
 }
 
-void OctomapManager::advertiseServices() {}
+void OctomapManager::advertiseServices() {
+  reset_map_service_ = nh_private_.advertiseService(
+      "reset_map", &OctomapManager::resetMapCallback, this);
+  publish_all_service_ = nh_private_.advertiseService(
+      "publish_all", &OctomapManager::publishAllCallback, this);
+}
+
 void OctomapManager::advertisePublishers() {
   occupied_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "octomap_occupied", 1, true);
@@ -43,14 +51,16 @@ void OctomapManager::publishAll() {
   free_nodes_pub_.publish(free_nodes);
 }
 
-void OctomapManager::resetMapCallback(std_srvs::Empty::Request& request,
+bool OctomapManager::resetMapCallback(std_srvs::Empty::Request& request,
                                       std_srvs::Empty::Response& response) {
   resetMap();
+  return true;
 }
 
-void OctomapManager::publishAllCallback(std_srvs::Empty::Request& request,
+bool OctomapManager::publishAllCallback(std_srvs::Empty::Request& request,
                                         std_srvs::Empty::Response& response) {
   publishAll();
+  return true;
 }
 
 void OctomapManager::saveTreeCallback() {}
@@ -112,9 +122,10 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   }
   catch (tf::TransformException& ex) {
     ROS_ERROR_STREAM(
-        "Error getting TF transform from sensor data: " << ex.what() << ".");
+        "Error getting TF transform from sensor data: " << ex.what());
     return false;
   }
+  tf::transformTFToKindr(tf_transform, transform);
   return true;
 }
 
