@@ -11,11 +11,22 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       world_frame_("world"),
       Q_(Eigen::Matrix4d::Identity()) {
-  // TODO(helenol): populate parameters from param server.
-
+  setParametersFromROS();
   subscribe();
   advertiseServices();
   advertisePublishers();
+}
+
+void OctomapManager::setParametersFromROS() {
+  OctomapParameters params;
+  nh_private_.param("tf_frame", world_frame_, world_frame_);
+  nh_private_.param("resolution", params.resolution, params.resolution);
+  nh_private_.param("probability_hit", params.probability_hit, params.probability_hit);
+  nh_private_.param("probability_miss", params.probability_miss, params.probability_miss);
+  nh_private_.param("threshold_min", params.threshold_min, params.threshold_min);
+  nh_private_.param("threshold_max", params.threshold_max, params.threshold_max);
+  nh_private_.param("filter_speckles", params.filter_speckles, params.filter_speckles);
+  nh_private_.param("sensor_max_range", params.sensor_max_range, params.sensor_max_range);
 }
 
 void OctomapManager::subscribe() {
