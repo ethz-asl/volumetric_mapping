@@ -260,6 +260,18 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
 
 double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
+void OctomapWorld::setFree(const Eigen::Vector3d& position,
+                           const Eigen::Vector3d& bounding_box_size) {
+  setLogOddsBoundingBox(position, bounding_box_size,
+                        octree_->getClampingThresMinLog());
+}
+
+void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
+                               const Eigen::Vector3d& bounding_box_size) {
+  setLogOddsBoundingBox(position, bounding_box_size,
+                        octree_->getClampingThresMaxLog());
+}
+
 void OctomapWorld::setLogOddsBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
     double log_odds_value) {
@@ -496,7 +508,7 @@ Eigen::Vector3d OctomapWorld::getMapCenter() const {
   Eigen::Vector3d min_3d(min_x, min_y, min_z);
   Eigen::Vector3d max_3d(max_x, max_y, max_z);
 
-  return min_3d + (max_3d - min_3d)/2;
+  return min_3d + (max_3d - min_3d) / 2;
 }
 
 Eigen::Vector3d OctomapWorld::getMapSize() const {
