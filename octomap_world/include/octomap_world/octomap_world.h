@@ -71,6 +71,12 @@ class OctomapWorld : public WorldBase {
       const Transformation& sensor_to_world,
       const sensor_msgs::PointCloud2::ConstPtr& cloud);
 
+  // Virtual functions for manually manipulating map probabilities.
+  virtual void setFree(const Eigen::Vector3d& position,
+                       const Eigen::Vector3d& bounding_box_size);
+  virtual void setOccupied(const Eigen::Vector3d& position,
+                           const Eigen::Vector3d& bounding_box_size);
+
   // Virtual functions for outputting map status.
   virtual CellStatus getCellStatusBoundingBox(
       const Eigen::Vector3d& point,
@@ -85,11 +91,6 @@ class OctomapWorld : public WorldBase {
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
   virtual Eigen::Vector3d getMapSize() const;
-
-  // Manually affect the probabilities of areas within a bounding box.
-  void setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                             const Eigen::Vector3d& bounding_box_size,
-                             double log_odds_value);
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;
@@ -114,6 +115,11 @@ class OctomapWorld : public WorldBase {
  private:
   // Check if the node at the specified key has neighbors or not.
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
+
+  // Manually affect the probabilities of areas within a bounding box.
+  void setLogOddsBoundingBox(const Eigen::Vector3d& position,
+                             const Eigen::Vector3d& bounding_box_size,
+                             double log_odds_value);
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
