@@ -72,9 +72,9 @@ class OctomapWorld : public WorldBase {
 
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size);
+                       const Eigen::Vector3d& bounding_box_size);
   virtual void setOccupied(const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size);
+                           const Eigen::Vector3d& bounding_box_size);
 
   // Virtual functions for outputting map status.
   virtual CellStatus getCellStatusBoundingBox(

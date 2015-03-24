@@ -25,8 +25,8 @@ void OctomapManager::subscribe() {
       "cam1/camera_info", 1, &OctomapManager::rightCameraInfoCallback, this);
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
-  pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
-                                 &OctomapManager::insertPointcloudWithTf, this);
+  pointcloud_sub_ = nh_.subscribe(
+      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
 }
 
 void OctomapManager::advertiseServices() {

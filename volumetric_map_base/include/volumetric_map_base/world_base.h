@@ -47,9 +47,9 @@ class WorldBase {
   Eigen::Matrix4d getQForCameras(double baseline,
                                  const Eigen::Matrix3d& left_cam_matrix,
                                  const Eigen::Matrix3d& right_cam_matrix) const;
-  Eigen::Matrix4d getQForROSCameras(
-      const sensor_msgs::CameraInfo& left_camera,
-      const sensor_msgs::CameraInfo& right_camera) const;
+  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
+                                    const sensor_msgs::CameraInfo& right_camera)
+      const;
 
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
@@ -57,8 +57,10 @@ class WorldBase {
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
-  virtual void setFree(const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size) {}
-  virtual void setOccupied(const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size) {}
+  virtual void setFree(const Eigen::Vector3d& position,
+                       const Eigen::Vector3d& bounding_box_size) {}
+  virtual void setOccupied(const Eigen::Vector3d& position,
+                           const Eigen::Vector3d& bounding_box_size) {}
 
   // Methods to query the current map state.
   virtual CellStatus getCellStatusBoundingBox(
