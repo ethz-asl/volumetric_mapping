@@ -27,6 +27,9 @@ void OctomapManager::setParametersFromROS() {
   nh_private_.param("threshold_max", params.threshold_max, params.threshold_max);
   nh_private_.param("filter_speckles", params.filter_speckles, params.filter_speckles);
   nh_private_.param("sensor_max_range", params.sensor_max_range, params.sensor_max_range);
+
+  // Set the parent class parameters.
+  setOctomapParameters(params);
 }
 
 void OctomapManager::subscribe() {
