@@ -39,6 +39,7 @@ class OctomapManager : public OctomapWorld {
 
  private:
   // Sets up subscriptions based on ROS node parameters.
+  void setParametersFromROS();
   void subscribe();
   void advertiseServices();
   void advertisePublishers();
