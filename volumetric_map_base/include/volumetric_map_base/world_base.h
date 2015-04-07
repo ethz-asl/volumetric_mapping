@@ -45,12 +45,13 @@ class WorldBase {
   // Helper functions to compute the Q matrix for given camera parameters.
   // Assumes UNRECTIFIED camera matrices.
   // Downsampling is handled in insertDisparityImage.
-  Eigen::Matrix4d getQForCameras(
-    const Transformation& T_C1_C0, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix, const Eigen::Vector2d& full_image_size) const;
-  Eigen::Matrix4d getQForROSCameras(
-      const sensor_msgs::CameraInfo& left_camera,
-      const sensor_msgs::CameraInfo& right_camera) const;
+  Eigen::Matrix4d getQForCameras(const Transformation& T_C1_C0,
+                                 const Eigen::Matrix3d& left_cam_matrix,
+                                 const Eigen::Matrix3d& right_cam_matrix,
+                                 const Eigen::Vector2d& full_image_size) const;
+  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
+                                    const sensor_msgs::CameraInfo& right_camera)
+      const;
 
   virtual void insertPointcloud(
       const Transformation& sensor_to_world,
