@@ -5,6 +5,9 @@
 
 #include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
+#include <octomap_msgs/GetOctomap.h>
+#include <volumetric_msgs/LoadMap.h>
+#include <volumetric_msgs/SaveMap.h>
 
 namespace volumetric_mapping {
 
@@ -34,8 +37,14 @@ class OctomapManager : public OctomapWorld {
                         std_srvs::Empty::Response& response);
   bool publishAllCallback(std_srvs::Empty::Request& request,
                           std_srvs::Empty::Response& response);
-  void saveTreeCallback();
-  void loadTreeCallback();
+  bool getOctomapCallback(octomap_msgs::GetOctomap::Request& request,
+                          octomap_msgs::GetOctomap::Response& response);
+
+  bool loadOctomapCallback(volumetric_msgs::LoadMap::Request& request,
+                           volumetric_msgs::LoadMap::Response& response);
+
+  bool saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
+                           volumetric_msgs::SaveMap::Response& response);
 
  private:
   // Sets up subscriptions based on ROS node parameters.
@@ -75,6 +84,7 @@ class OctomapManager : public OctomapWorld {
   // Services!
   ros::ServiceServer reset_map_service_;
   ros::ServiceServer publish_all_service_;
+  ros::ServiceServer get_map_service_;
   ros::ServiceServer save_octree_service_;
   ros::ServiceServer load_octree_service_;
 
