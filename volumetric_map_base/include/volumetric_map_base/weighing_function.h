@@ -19,8 +19,8 @@ class WeighingFunction {
   WeighingFunction() {}
   virtual ~WeighingFunction() {}
 
-  virtual double weighPoint(double x, double y, double z) { return 1.0; }
-  virtual double weighDisparity(unsigned int u, unsigned int v, double d) {
+  virtual double weighPoint(double x, double y, double z) const { return 1.0; }
+  virtual double weighDisparity(unsigned int u, unsigned int v, double d) const {
     return 1.0;
   }
 };

@@ -101,11 +101,13 @@ class WorldBase {
 
   // Weighing function for points -> affect the weight of each point inserted
   // into the map.
+  // If the weighing function is set, the "with weights" version if used for
+  // all insertion functions.
   void setWeighingFunction(const std::shared_ptr<WeighingFunction>& weighing_function) {
     weighing_function_ = weighing_function;
   }
 
-  bool isWeighingFunctionSet() {
+  bool isWeighingFunctionSet() const {
     if (weighing_function_) {
       return true;
     }
@@ -121,11 +123,22 @@ class WorldBase {
       const Transformation& sensor_to_world, const cv::Mat& projected_points) {
     LOG(ERROR) << "Calling unimplemented disparity insertion!";
   }
+  virtual void insertProjectedDisparityIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world, const cv::Mat& projected_points,
+      const cv::Mat& weights) {
+    LOG(ERROR) << "Calling unimplemented disparity insertion!";
+  }
 
   virtual void insertPointcloudIntoMapImpl(
       const Transformation& sensor_to_world,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud) {
     LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
+  }
+  virtual void insertPointcloudIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud,
+      const std::vector<double>& weights) {
+    LOG(ERROR) << "Calling unimplemented disparity insertion!";
   }
 
   // Generate Q matrix from parameters.
@@ -133,6 +146,13 @@ class WorldBase {
                             double left_fx, double left_fy, double right_cx,
                             double right_cy, double right_fx,
                             double right_fy) const;
+
+  // Compute weights from disparities.
+  void computeWeights(const cv::Mat& disparity, cv::Mat* weights) const;
+
+  // Compute weights from pointcloud data.
+  void computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                      std::vector<double>* weights) const;
 
   std::shared_ptr<WeighingFunction> weighing_function_;
 };

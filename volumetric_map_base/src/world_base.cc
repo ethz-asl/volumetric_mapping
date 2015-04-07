@@ -46,7 +46,14 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
   cv::reprojectImageTo3D(disparity, reprojected_disparities, Q_cv, true);
 
   // Call the implemnentation function of the inheriting class.
-  insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
+  if (!isWeighingFunctionSet()) {
+    insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
+  } else {
+    cv::Mat weights;
+    computeWeights(disparity, &weights);
+    insertProjectedDisparityIntoMapWithWeightsImpl(
+        sensor_to_world, reprojected_disparities, weights);
+  }
 }
 
 // Helper functions to compute the Q matrix for given UNRECTIFIED camera
@@ -149,7 +156,45 @@ void WorldBase::insertPointcloud(
   pcl::fromROSMsg(*cloud_msg, *cloud);
 
   // Call the implemnentation function of the inheriting class.
-  insertPointcloudIntoMapImpl(sensor_to_world, cloud);
+  if (!isWeighingFunctionSet()) {
+    insertPointcloudIntoMapImpl(sensor_to_world, cloud);
+  } else {
+    std::vector<double> weights;
+    computeWeights(cloud, &weights);
+    insertPointcloudIntoMapWithWeightsImpl(sensor_to_world, cloud, weights);
+  }
+}
+
+void WorldBase::computeWeights(const cv::Mat& disparity, cv::Mat* weights) const {
+  *weights = cv::Mat::ones(disparity.rows, disparity.cols, CV_32F);
+
+  if (!weighing_function_) {
+    return;
+  }
+
+  for (int v = 0; v < disparity.rows; ++v) {
+    // Disparity is 32f.
+    const float* row_pointer = disparity.ptr<float>(v);
+    for (int u = 0; u < disparity.cols; ++u) {
+      weights->at<float>(v, u) = weighing_function_->weighDisparity(u, v, row_pointer[u]);
+    }
+  }
+}
+
+void WorldBase::computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                    std::vector<double>* weights) const {
+  weights->resize(cloud->size(), 1.0);
+
+  if (!weighing_function_) {
+    return;
+  }
+
+  unsigned int index = 0;
+  for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
+       it != cloud->end(); ++it) {
+    (*weights)[index] = weighing_function_->weighPoint(it->x, it->y, it->z);
+    index++;
+  }
 }
 
 }  // namespace volumetric_mapping
