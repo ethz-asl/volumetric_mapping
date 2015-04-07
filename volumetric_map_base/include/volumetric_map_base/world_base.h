@@ -59,9 +59,8 @@ class WorldBase {
 
   // Non-virtual function that class insertPointcloudImpl() after converting the
   // ROS message into a PCL pointcloud.
-  void insertPointcloud(
-      const Transformation& sensor_to_world,
-      const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+  void insertPointcloud(const Transformation& sensor_to_world,
+                        const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
@@ -103,7 +102,8 @@ class WorldBase {
   // into the map.
   // If the weighing function is set, the "with weights" version if used for
   // all insertion functions.
-  void setWeighingFunction(const std::shared_ptr<WeighingFunction>& weighing_function) {
+  void setWeighingFunction(
+      const std::shared_ptr<WeighingFunction>& weighing_function) {
     weighing_function_ = weighing_function;
   }
 

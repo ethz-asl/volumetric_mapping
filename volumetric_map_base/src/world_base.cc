@@ -47,7 +47,8 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
 
   // Call the implemnentation function of the inheriting class.
   if (!isWeighingFunctionSet()) {
-    insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
+    insertProjectedDisparityIntoMapImpl(sensor_to_world,
+                                        reprojected_disparities);
   } else {
     cv::Mat weights;
     computeWeights(disparity, &weights);
@@ -150,8 +151,8 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
 }
 
 void WorldBase::insertPointcloud(
-      const Transformation& sensor_to_world,
-      const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
+    const Transformation& sensor_to_world,
+    const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*cloud_msg, *cloud);
 
@@ -165,7 +166,8 @@ void WorldBase::insertPointcloud(
   }
 }
 
-void WorldBase::computeWeights(const cv::Mat& disparity, cv::Mat* weights) const {
+void WorldBase::computeWeights(const cv::Mat& disparity,
+                               cv::Mat* weights) const {
   *weights = cv::Mat::ones(disparity.rows, disparity.cols, CV_32F);
 
   if (!weighing_function_) {
@@ -176,13 +178,14 @@ void WorldBase::computeWeights(const cv::Mat& disparity, cv::Mat* weights) const
     // Disparity is 32f.
     const float* row_pointer = disparity.ptr<float>(v);
     for (int u = 0; u < disparity.cols; ++u) {
-      weights->at<float>(v, u) = weighing_function_->weighDisparity(u, v, row_pointer[u]);
+      weights->at<float>(v, u) =
+          weighing_function_->weighDisparity(u, v, row_pointer[u]);
     }
   }
 }
 
 void WorldBase::computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
-                    std::vector<double>* weights) const {
+                               std::vector<double>* weights) const {
   weights->resize(cloud->size(), 1.0);
 
   if (!weighing_function_) {

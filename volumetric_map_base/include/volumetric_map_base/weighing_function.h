@@ -1,7 +1,6 @@
 #ifndef VOLUMETRIC_MAP_BASE_WEIGHING_FUNCTION_H_
 #define VOLUMETRIC_MAP_BASE_WEIGHING_FUNCTION_H_
 
-
 #include <vector>
 
 namespace volumetric_mapping {
@@ -20,7 +19,8 @@ class WeighingFunction {
   virtual ~WeighingFunction() {}
 
   virtual double weighPoint(double x, double y, double z) const { return 1.0; }
-  virtual double weighDisparity(unsigned int u, unsigned int v, double d) const {
+  virtual double weighDisparity(unsigned int u, unsigned int v,
+                                double d) const {
     return 1.0;
   }
 };
