@@ -2,10 +2,12 @@
 #define VOLUMETRIC_MAP_BASE_WORLD_BASE_H_
 
 #include <kindr/minimal/quat-transformation.h>
+#include <opencv2/opencv.hpp>
+#include <pcl/point_types.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <opencv2/opencv.hpp>
+#include <pcl/conversions.h>
 
 namespace volumetric_mapping {
 
@@ -45,16 +47,19 @@ class WorldBase {
   // Helper functions to compute the Q matrix for given camera parameters.
   // Assumes UNRECTIFIED camera matrices.
   // Downsampling is handled in insertDisparityImage.
-  Eigen::Matrix4d getQForCameras(
-    const Transformation& T_C1_C0, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix, const Eigen::Vector2d& full_image_size) const;
-  Eigen::Matrix4d getQForROSCameras(
-      const sensor_msgs::CameraInfo& left_camera,
-      const sensor_msgs::CameraInfo& right_camera) const;
+  Eigen::Matrix4d getQForCameras(const Transformation& T_C1_C0,
+                                 const Eigen::Matrix3d& left_cam_matrix,
+                                 const Eigen::Matrix3d& right_cam_matrix,
+                                 const Eigen::Vector2d& full_image_size) const;
+  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
+                                    const sensor_msgs::CameraInfo& right_camera)
+      const;
 
-  virtual void insertPointcloud(
+  // Non-virtual function that class insertPointcloudImpl() after converting the
+  // ROS message into a PCL pointcloud.
+  void insertPointcloud(
       const Transformation& sensor_to_world,
-      const sensor_msgs::PointCloud2::ConstPtr& cloud) {}
+      const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
@@ -100,6 +105,12 @@ class WorldBase {
   virtual void insertProjectedDisparityIntoMapImpl(
       const Transformation& sensor_to_world, const cv::Mat& projected_points) {
     LOG(ERROR) << "Calling unimplemented disparity insertion!";
+  }
+
+  virtual void insertPointcloudIntoMapImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud) {
+    LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
   }
 
   // Generate Q matrix from parameters.

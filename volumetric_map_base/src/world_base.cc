@@ -4,6 +4,8 @@
 #include <image_geometry/stereo_camera_model.h>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace volumetric_mapping {
 
@@ -47,11 +49,13 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
   insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
 }
 
-// Helper functions to compute the Q matrix for given UNRECTIFIED camera parameters.
+// Helper functions to compute the Q matrix for given UNRECTIFIED camera
+// parameters.
 // Assumes 0 distortion.
 Eigen::Matrix4d WorldBase::getQForCameras(
     const Transformation& T_C1_C0, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix, const Eigen::Vector2d& full_image_size) const {
+    const Eigen::Matrix3d& right_cam_matrix,
+    const Eigen::Vector2d& full_image_size) const {
   // So unfortunately... Have to actually stereo rectify this pair.
   // Input matrices: C = camera matrix (3x3), D = disortion coefficients (5x1),
   // R = rotation matrix between cameras (3x3), T = translation between cameras
@@ -136,6 +140,16 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
   Q(3, 3) = left_fy * (left_cx - right_cx);
 
   return Q;
+}
+
+void WorldBase::insertPointcloud(
+      const Transformation& sensor_to_world,
+      const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg(*cloud_msg, *cloud);
+
+  // Call the implemnentation function of the inheriting class.
+  insertPointcloudIntoMapImpl(sensor_to_world, cloud);
 }
 
 }  // namespace volumetric_mapping
