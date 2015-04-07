@@ -47,11 +47,13 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
   insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
 }
 
-// Helper functions to compute the Q matrix for given UNRECTIFIED camera parameters.
+// Helper functions to compute the Q matrix for given UNRECTIFIED camera
+// parameters.
 // Assumes 0 distortion.
 Eigen::Matrix4d WorldBase::getQForCameras(
     const Transformation& T_C1_C0, const Eigen::Matrix3d& left_cam_matrix,
-    const Eigen::Matrix3d& right_cam_matrix, const Eigen::Vector2d& full_image_size) const {
+    const Eigen::Matrix3d& right_cam_matrix,
+    const Eigen::Vector2d& full_image_size) const {
   // So unfortunately... Have to actually stereo rectify this pair.
   // Input matrices: C = camera matrix (3x3), D = disortion coefficients (5x1),
   // R = rotation matrix between cameras (3x3), T = translation between cameras

@@ -68,10 +68,10 @@ void OctomapManager::advertisePublishers() {
   free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "octomap_free", 1, true);
 
-  binary_map_pub_ = nh_private_.advertise<octomap_msgs::Octomap>(
-      "octomap_binary", 1, true);
-  full_map_pub_ = nh_private_.advertise<octomap_msgs::Octomap>(
-      "octomap_full", 1, true);
+  binary_map_pub_ =
+      nh_private_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
+  full_map_pub_ =
+      nh_private_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
 }
 
 void OctomapManager::publishAll() {
@@ -101,18 +101,21 @@ bool OctomapManager::publishAllCallback(std_srvs::Empty::Request& request,
   return true;
 }
 
-bool OctomapManager::getOctomapCallback(octomap_msgs::GetOctomap::Request& request,
-                                        octomap_msgs::GetOctomap::Response& response) {
+bool OctomapManager::getOctomapCallback(
+    octomap_msgs::GetOctomap::Request& request,
+    octomap_msgs::GetOctomap::Response& response) {
   return getOctomapFullMsg(&response.map);
 }
 
-bool OctomapManager::loadOctomapCallback(volumetric_msgs::LoadMap::Request& request,
-                                      volumetric_msgs::LoadMap::Response& response) {
+bool OctomapManager::loadOctomapCallback(
+    volumetric_msgs::LoadMap::Request& request,
+    volumetric_msgs::LoadMap::Response& response) {
   return loadOctomapFromFile(request.file_path);
 }
 
-bool OctomapManager::saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
-                                      volumetric_msgs::SaveMap::Response& response) {
+bool OctomapManager::saveOctomapCallback(
+    volumetric_msgs::SaveMap::Request& request,
+    volumetric_msgs::SaveMap::Response& response) {
   return writeOctomapToFile(request.file_path);
 }
 

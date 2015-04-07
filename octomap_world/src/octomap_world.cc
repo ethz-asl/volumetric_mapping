@@ -33,9 +33,7 @@ void OctomapWorld::resetMap() {
   octree_->clear();
 }
 
-void OctomapWorld::prune() {
-  octree_->prune();
-}
+void OctomapWorld::prune() { octree_->prune(); }
 
 void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   if (octree_) {

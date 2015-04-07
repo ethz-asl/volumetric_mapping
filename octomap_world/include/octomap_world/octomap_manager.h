@@ -41,11 +41,10 @@ class OctomapManager : public OctomapWorld {
                           octomap_msgs::GetOctomap::Response& response);
 
   bool loadOctomapCallback(volumetric_msgs::LoadMap::Request& request,
-                        volumetric_msgs::LoadMap::Response& response);
+                           volumetric_msgs::LoadMap::Response& response);
 
   bool saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
-                                      volumetric_msgs::SaveMap::Response& response);
-
+                           volumetric_msgs::SaveMap::Response& response);
 
  private:
   // Sets up subscriptions based on ROS node parameters.
