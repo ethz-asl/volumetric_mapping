@@ -9,6 +9,8 @@
 #include <stereo_msgs/DisparityImage.h>
 #include <pcl/conversions.h>
 
+#include <volumetric_map_base/weighing_function.h>
+
 namespace volumetric_mapping {
 
 typedef kindr::minimal::QuatTransformation Transformation;
@@ -97,6 +99,19 @@ class WorldBase {
                            std::numeric_limits<double>::max());
   }
 
+  // Weighing function for points -> affect the weight of each point inserted
+  // into the map.
+  void setWeighingFunction(const std::shared_ptr<WeighingFunction>& weighing_function) {
+    weighing_function_ = weighing_function;
+  }
+
+  bool isWeighingFunctionSet() {
+    if (weighing_function_) {
+      return true;
+    }
+    return false;
+  }
+
  protected:
   // Called by insertDisparityImage(). Inheriting classes need to implement
   // this.
@@ -118,6 +133,8 @@ class WorldBase {
                             double left_fx, double left_fy, double right_cx,
                             double right_cy, double right_fx,
                             double right_fy) const;
+
+  std::shared_ptr<WeighingFunction> weighing_function_;
 };
 
 }  // namespace volumetric_mapping
