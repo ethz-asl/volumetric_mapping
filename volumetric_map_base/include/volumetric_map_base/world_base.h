@@ -9,7 +9,7 @@
 #include <stereo_msgs/DisparityImage.h>
 #include <pcl/conversions.h>
 
-#include <volumetric_map_base/weighing_function.h>
+#include "volumetric_map_base/point_weighing.h"
 
 namespace volumetric_mapping {
 
@@ -57,7 +57,7 @@ class WorldBase {
                                     const sensor_msgs::CameraInfo& right_camera)
       const;
 
-  // Non-virtual function that class insertPointcloudImpl() after converting the
+  // Non-virtual function that calls insertPointcloudImpl() after converting the
   // ROS message into a PCL pointcloud.
   void insertPointcloud(const Transformation& sensor_to_world,
                         const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
@@ -98,17 +98,21 @@ class WorldBase {
                            std::numeric_limits<double>::max());
   }
 
-  // Weighing function for points -> affect the weight of each point inserted
+  // Weighing class for points -> affect the weight of each point inserted
   // into the map.
-  // If the weighing function is set, the "with weights" version if used for
+  // If the weighing class is set, the "with weights" version if used for
   // all insertion functions.
-  void setWeighingFunction(
-      const std::shared_ptr<WeighingFunction>& weighing_function) {
-    weighing_function_ = weighing_function;
+  void setPointWeighing(
+      const std::shared_ptr<PointWeighing>& point_weighing) {
+    point_weighing_ = point_weighing;
   }
 
-  bool isWeighingFunctionSet() const {
-    if (weighing_function_) {
+  void clearPointWeighing() {
+    point_weighing_.reset();
+  }
+
+  bool isPointWeighingSet() const {
+    if (point_weighing_) {
       return true;
     }
     return false;
@@ -154,7 +158,7 @@ class WorldBase {
   void computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
                       std::vector<double>* weights) const;
 
-  std::shared_ptr<WeighingFunction> weighing_function_;
+  std::shared_ptr<PointWeighing> point_weighing_;
 };
 
 }  // namespace volumetric_mapping

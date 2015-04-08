@@ -11,15 +11,15 @@ namespace volumetric_mapping {
 // value for the measurement.
 // For example, default behavior would happen with a value of 1.0 for all points
 // (and this is the base class implementation).
-// In the case of raycasting-built maps, such as octomap, all probabilities in
-// the ray of the point will be scaled by this amount.
-class WeighingFunction {
+// In the case of raycasting-built maps, such as octomap, all occupied
+// probabilities in the ray of the point will be scaled by this amount.
+class PointWeighing {
  public:
-  WeighingFunction() {}
-  virtual ~WeighingFunction() {}
+  PointWeighing() {}
+  virtual ~PointWeighing() {}
 
-  virtual double weighPoint(double x, double y, double z) const { return 1.0; }
-  virtual double weighDisparity(unsigned int u, unsigned int v,
+  virtual double computeWeightForPoint(double x, double y, double z) const { return 1.0; }
+  virtual double computeWeightForDisparity(unsigned int u, unsigned int v,
                                 double d) const {
     return 1.0;
   }
