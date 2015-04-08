@@ -18,9 +18,11 @@ class PointWeighing {
   PointWeighing() {}
   virtual ~PointWeighing() {}
 
-  virtual double computeWeightForPoint(double x, double y, double z) const { return 1.0; }
+  virtual double computeWeightForPoint(double x, double y, double z) const {
+    return 1.0;
+  }
   virtual double computeWeightForDisparity(unsigned int u, unsigned int v,
-                                double d) const {
+                                           double d) const {
     return 1.0;
   }
 };

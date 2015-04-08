@@ -102,14 +102,11 @@ class WorldBase {
   // into the map.
   // If the weighing class is set, the "with weights" version if used for
   // all insertion functions.
-  void setPointWeighing(
-      const std::shared_ptr<PointWeighing>& point_weighing) {
+  void setPointWeighing(const std::shared_ptr<PointWeighing>& point_weighing) {
     point_weighing_ = point_weighing;
   }
 
-  void clearPointWeighing() {
-    point_weighing_.reset();
-  }
+  void clearPointWeighing() { point_weighing_.reset(); }
 
   bool isPointWeighingSet() const {
     if (point_weighing_) {

@@ -195,7 +195,8 @@ void WorldBase::computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
   unsigned int index = 0;
   for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
        it != cloud->end(); ++it) {
-    (*weights)[index] = point_weighing_->computeWeightForPoint(it->x, it->y, it->z);
+    (*weights)[index] =
+        point_weighing_->computeWeightForPoint(it->x, it->y, it->z);
     index++;
   }
 }
