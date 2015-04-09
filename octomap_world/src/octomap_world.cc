@@ -224,17 +224,21 @@ void OctomapWorld::castRayWithWeights(
   // We assume the function is symmetrical, and that
   // p_free < p_unknown < p_occupied.
   // This allows us to just compute the right half of the Gaussian curve.
-  const double a = 1 / (sigma * sqrt(2 * M_PI));
-  const double sigma_squared = sigma * sigma;
   std::vector<double> weights(fwhm_nodes, p_free);
   // If sigma is super small, then just use free weights for everything.
   if (sigma > 0.0001) {
+    const double a = (p_occ - p_free) / (sigma * sqrt(2 * M_PI));
+    const double sigma_squared = sigma * sigma;
+
     for (int i = 0; i < weights.size(); i++) {
       const double distance_from_point_squared =
           (i * map_resolution) * (i * map_resolution);
       weights[i] =
           p_free + a * exp(-distance_from_point_squared / (2 * sigma_squared));
     }
+  } else {
+    // Mark the actual occupied point as full hit probability.
+    weights[0] = p_occ;
   }
 
   if (params_.sensor_max_range < 0.0 ||
@@ -301,12 +305,10 @@ void OctomapWorld::updateOccupancyWithWeights(
     const KeyToWeightsMap& occupied_cell_weights, octomap::KeySet* free_cells) {
   CHECK_NOTNULL(free_cells);
 
-  const double prob_hit = octree_->getProbHit();
-
   // Mark occupied cells.
   for (const std::pair<octomap::OcTreeKey, double>& kv :
        occupied_cell_weights) {
-    octree_->updateNode(kv.first, octomap::logodds(kv.second * prob_hit));
+    octree_->updateNode(kv.first, octomap::logodds(kv.second));
 
     // Remove any occupied cells from free cells - assume there are far fewer
     // occupied cells than free cells, so this is much faster than checking on
