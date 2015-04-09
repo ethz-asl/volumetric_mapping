@@ -4,8 +4,6 @@
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
 #include <pcl/conversions.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 
 namespace volumetric_mapping {
@@ -55,12 +53,9 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   params_ = params;
 }
 
-void OctomapWorld::insertPointcloud(
+void OctomapWorld::insertPointcloudIntoMapImpl(
     const Transformation& sensor_to_world,
-    const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromROSMsg(*cloud_msg, *cloud);
-
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
   // First, rotate the pointcloud into the world frame.
   pcl::transformPointCloud(*cloud, *cloud,
                            sensor_to_world.getTransformationMatrix());

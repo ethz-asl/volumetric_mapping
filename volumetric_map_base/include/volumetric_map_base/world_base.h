@@ -2,10 +2,14 @@
 #define VOLUMETRIC_MAP_BASE_WORLD_BASE_H_
 
 #include <kindr/minimal/quat-transformation.h>
+#include <opencv2/opencv.hpp>
+#include <pcl/point_types.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <opencv2/opencv.hpp>
+#include <pcl/conversions.h>
+
+#include "volumetric_map_base/point_weighing.h"
 
 namespace volumetric_mapping {
 
@@ -53,9 +57,10 @@ class WorldBase {
                                     const sensor_msgs::CameraInfo& right_camera)
       const;
 
-  virtual void insertPointcloud(
-      const Transformation& sensor_to_world,
-      const sensor_msgs::PointCloud2::ConstPtr& cloud) {}
+  // Non-virtual function that calls insertPointcloudImpl() after converting the
+  // ROS message into a PCL pointcloud.
+  void insertPointcloud(const Transformation& sensor_to_world,
+                        const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
@@ -93,6 +98,23 @@ class WorldBase {
                            std::numeric_limits<double>::max());
   }
 
+  // Weighing class for points -> affect the weight of each point inserted
+  // into the map.
+  // If the weighing class is set, the "with weights" version if used for
+  // all insertion functions.
+  void setPointWeighing(const std::shared_ptr<PointWeighing>& point_weighing) {
+    point_weighing_ = point_weighing;
+  }
+
+  void clearPointWeighing() { point_weighing_.reset(); }
+
+  bool isPointWeighingSet() const {
+    if (point_weighing_) {
+      return true;
+    }
+    return false;
+  }
+
  protected:
   // Called by insertDisparityImage(). Inheriting classes need to implement
   // this.
@@ -102,12 +124,38 @@ class WorldBase {
       const Transformation& sensor_to_world, const cv::Mat& projected_points) {
     LOG(ERROR) << "Calling unimplemented disparity insertion!";
   }
+  virtual void insertProjectedDisparityIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world, const cv::Mat& projected_points,
+      const cv::Mat& weights) {
+    LOG(ERROR) << "Calling unimplemented disparity insertion!";
+  }
+
+  virtual void insertPointcloudIntoMapImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud) {
+    LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
+  }
+  virtual void insertPointcloudIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud,
+      const std::vector<double>& weights) {
+    LOG(ERROR) << "Calling unimplemented disparity insertion!";
+  }
 
   // Generate Q matrix from parameters.
   Eigen::Matrix4d generateQ(double Tx, double left_cx, double left_cy,
                             double left_fx, double left_fy, double right_cx,
                             double right_cy, double right_fx,
                             double right_fy) const;
+
+  // Compute weights from disparities.
+  void computeWeights(const cv::Mat& disparity, cv::Mat* weights) const;
+
+  // Compute weights from pointcloud data.
+  void computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                      std::vector<double>* weights) const;
+
+  std::shared_ptr<PointWeighing> point_weighing_;
 };
 
 }  // namespace volumetric_mapping
