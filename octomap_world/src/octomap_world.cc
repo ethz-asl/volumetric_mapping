@@ -175,7 +175,8 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
   // octree_->updateInnerOccupancy();
 }
 
-void OctomapWorld::insertIntoWeightsMapIfHigher(const octomap::OcTreeKey& key, double weight,
+void OctomapWorld::insertIntoWeightsMapIfHigher(
+    const octomap::OcTreeKey& key, double weight,
     KeyToWeightsMap* occupied_cell_weights) const {
   // Check if the key is already in:
   KeyToWeightsMap::iterator iter = occupied_cell_weights->find(key);
@@ -187,15 +188,15 @@ void OctomapWorld::insertIntoWeightsMapIfHigher(const octomap::OcTreeKey& key, d
     iter->second = weight;
   } else {
     // Add a new pair if not.
-    occupied_cell_weights->insert(std::pair<octomap::OcTreeKey, double>(key, weight));
+    occupied_cell_weights->insert(
+        std::pair<octomap::OcTreeKey, double>(key, weight));
   }
 }
 
-void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
-                           const octomap::point3d& point,
-                           double weight,
-                           octomap::KeySet* free_cells,
-                           KeyToWeightsMap* occupied_cell_weights) const {
+void OctomapWorld::castRayWithWeights(
+    const octomap::point3d& sensor_origin, const octomap::point3d& point,
+    double weight, octomap::KeySet* free_cells,
+    KeyToWeightsMap* occupied_cell_weights) const {
   CHECK_NOTNULL(free_cells);
   CHECK_NOTNULL(occupied_cell_weights);
 
@@ -207,14 +208,14 @@ void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
   // occupied (with the probability decreasing as it approaches the sensor),
   // and at most one FWHM behind the point (though likely much shorter, since
   // the certainty should never be lower than unknown behind the measurement).
-  const double sigma = (1-weight)/weight;
+  const double sigma = (1 - weight) / weight;
   // This is an approximation: see:
   // http://en.wikipedia.org/wiki/Full_width_at_half_maximum
   const double fwhm_meters = 2.355 * sigma;
 
   // Precompute the curve for this weight and map resolution.
   const double map_resolution = getResolution();
-  const int fwhm_nodes = fwhm_meters/map_resolution + 1;
+  const int fwhm_nodes = fwhm_meters / map_resolution + 1;
 
   const double p_free = octree_->getProbMiss();
   const double p_occ = octree_->getProbHit();
@@ -223,15 +224,16 @@ void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
   // We assume the function is symmetrical, and that
   // p_free < p_unknown < p_occupied.
   // This allows us to just compute the right half of the Gaussian curve.
-  const double a = 1/(sigma*sqrt(2*M_PI));
-  const double sigma_squared = sigma*sigma;
+  const double a = 1 / (sigma * sqrt(2 * M_PI));
+  const double sigma_squared = sigma * sigma;
   std::vector<double> weights(fwhm_nodes, p_free);
   // If sigma is super small, then just use free weights for everything.
   if (sigma > 0.0001) {
     for (int i = 0; i < weights.size(); i++) {
       const double distance_from_point_squared =
-          (i*map_resolution)*(i*map_resolution);
-      weights[i] = p_free + a*exp(-distance_from_point_squared/(2*sigma_squared));
+          (i * map_resolution) * (i * map_resolution);
+      weights[i] =
+          p_free + a * exp(-distance_from_point_squared / (2 * sigma_squared));
     }
   }
 
@@ -251,8 +253,8 @@ void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
     Eigen::Vector3d direction =
         (point_eigen - pointOctomapToEigen(sensor_origin));
     direction.normalize();
-    Eigen::Vector3d closest_end_eigen = point_eigen - direction*fwhm_meters;
-    Eigen::Vector3d farthest_end_eigen = point_eigen + direction*fwhm_meters;
+    Eigen::Vector3d closest_end_eigen = point_eigen - direction * fwhm_meters;
+    Eigen::Vector3d farthest_end_eigen = point_eigen + direction * fwhm_meters;
 
     octomap::OcTreeKey key;
     if (octree_->coordToKeyChecked(point, key)) {
@@ -263,19 +265,23 @@ void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
       // Then, cast rays in both directions and add the measurements.
       for (int i = 0; i < fwhm_nodes; i++) {
         // Front cast, toward sensor:
-        octomap::point3d coordinate = pointEigenToOctomap(point_eigen - direction*map_resolution*i);
+        octomap::point3d coordinate =
+            pointEigenToOctomap(point_eigen - direction * map_resolution * i);
         occupied_weight = weights[i];
         if (occupied_weight > p_free) {
           octree_->coordToKeyChecked(coordinate, key);
-          insertIntoWeightsMapIfHigher(key, occupied_weight, occupied_cell_weights);
+          insertIntoWeightsMapIfHigher(key, occupied_weight,
+                                       occupied_cell_weights);
         }
 
         // Back cast, away from sensor:
-        coordinate = pointEigenToOctomap(point_eigen - direction*map_resolution*i);
+        coordinate =
+            pointEigenToOctomap(point_eigen - direction * map_resolution * i);
         occupied_weight = weights[i];
         if (occupied_weight > p_unknown) {
           octree_->coordToKeyChecked(coordinate, key);
-          insertIntoWeightsMapIfHigher(key, occupied_weight, occupied_cell_weights);
+          insertIntoWeightsMapIfHigher(key, occupied_weight,
+                                       occupied_cell_weights);
         }
       }
     }
@@ -292,14 +298,14 @@ void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
 }
 
 void OctomapWorld::updateOccupancyWithWeights(
-    const KeyToWeightsMap& occupied_cell_weights,
-    octomap::KeySet* free_cells) {
+    const KeyToWeightsMap& occupied_cell_weights, octomap::KeySet* free_cells) {
   CHECK_NOTNULL(free_cells);
 
   const double prob_hit = octree_->getProbHit();
 
   // Mark occupied cells.
-  for (const std::pair<octomap::OcTreeKey, double>& kv : occupied_cell_weights) {
+  for (const std::pair<octomap::OcTreeKey, double>& kv :
+       occupied_cell_weights) {
     octree_->updateNode(kv.first, octomap::logodds(kv.second * prob_hit));
 
     // Remove any occupied cells from free cells - assume there are far fewer
@@ -341,8 +347,9 @@ void OctomapWorld::insertProjectedDisparityIntoMapWithWeightsImpl(
 
       point_eigen = sensor_to_world * point_eigen;
 
-      castRayWithWeights(sensor_origin, pointEigenToOctomap(point_eigen), weights.at<float>(v, u), &free_cells,
-              &occupied_cell_weights);
+      castRayWithWeights(sensor_origin, pointEigenToOctomap(point_eigen),
+                         weights.at<float>(v, u), &free_cells,
+                         &occupied_cell_weights);
     }
   }
   updateOccupancyWithWeights(occupied_cell_weights, &free_cells);
@@ -370,14 +377,14 @@ void OctomapWorld::insertPointcloudIntoMapWithWeightsImpl(
        it != cloud->end(); ++it) {
     octomap::point3d point(it->x, it->y, it->z);
     // Check if this is within the allowed sensor range.
-    castRayWithWeights(sensor_origin, point, weights[i], &free_cells, &occupied_cell_weights);
+    castRayWithWeights(sensor_origin, point, weights[i], &free_cells,
+                       &occupied_cell_weights);
     i++;
   }
 
   // Apply the new free cells and occupied cells from the weights.
   updateOccupancyWithWeights(occupied_cell_weights, &free_cells);
 }
-
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,
