@@ -122,6 +122,8 @@ class OctomapWorld : public WorldBase {
       const std::vector<double>& weights);
 
  private:
+  typedef std::tr1::unordered_map<octomap::OcTreeKey, double, octomap::OcTreeKey::KeyHash> KeyToWeightsMap;
+
   // Check if the node at the specified key has neighbors or not.
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
 
@@ -139,15 +141,15 @@ class OctomapWorld : public WorldBase {
   bool isValidPoint(const cv::Vec3f& point) const;
 
   void insertIntoWeightsMapIfHigher(const octomap::OcTreeKey& key, double weight,
-    std::map<octomap::OcTreeKey, double>* occupied_cell_weights) const;
+    KeyToWeightsMap* occupied_cell_weights) const;
   void castRayWithWeights(const octomap::point3d& sensor_origin,
                            const octomap::point3d& point,
                            double weight,
                            octomap::KeySet* free_cells,
-                           std::map<octomap::OcTreeKey, double>*
+                           KeyToWeightsMap*
                            occupied_cell_weights) const;
   void updateOccupancyWithWeights(
-    const std::map<octomap::OcTreeKey, double>& occupied_cell_weights,
+    const KeyToWeightsMap& occupied_cell_weights,
     octomap::KeySet* free_cells);
 
   void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
