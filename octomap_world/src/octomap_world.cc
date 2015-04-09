@@ -122,7 +122,7 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
     if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
       free_cells->insert(key_ray.begin(), key_ray.end());
     }
-    // Mark endpoing as occupied.
+    // Mark endpoint as occupied.
     octomap::OcTreeKey key;
     if (octree_->coordToKeyChecked(point, key)) {
       occupied_cells->insert(key);
@@ -170,8 +170,213 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
        it != end; ++it) {
     octree_->updateNode(*it, false);
   }
-  octree_->updateInnerOccupancy();
+  // TODO(helenol): I think this is not necessary since we actually don't do
+  // lazy evals...
+  // octree_->updateInnerOccupancy();
 }
+
+void OctomapWorld::insertIntoWeightsMapIfHigher(const octomap::OcTreeKey& key, double weight,
+    std::map<octomap::OcTreeKey, double>* occupied_cell_weights) const {
+  // Check if the key is already in:
+  std::map<octomap::OcTreeKey, double>::iterator iter = occupied_cell_weights->find(key);
+  if (iter != occupied_cell_weights->end()) {
+    if (iter->second > weight) {
+      return;
+    }
+    // Only update if the new weight is higher.
+    iter->second = weight;
+  } else {
+    // Add a new pair if not.
+    occupied_cell_weights->emplace(std::pair<octomap::OcTreeKey, double>(key, weight));
+  }
+}
+
+void OctomapWorld::castRayWithWeights(const octomap::point3d& sensor_origin,
+                           const octomap::point3d& point,
+                           double weight,
+                           octomap::KeySet* free_cells,
+                           std::map<octomap::OcTreeKey, double>*
+                           occupied_cell_weights) const {
+  CHECK_NOTNULL(free_cells);
+  CHECK_NOTNULL(occupied_cell_weights);
+
+  // The weight is related to the standard deviation of the Gaussian describing
+  // the measurement uncertainty of the measurement with sigma = (1-w)/w.
+  // We use the FWHM (full width at half maximum) as a proxy for where the ray
+  // should still be marked as free and where it should be marked as occupied.
+  // Given a measurement p, the one FWHM in front of the point is considered
+  // occupied (with the probability decreasing as it approaches the sensor),
+  // and at most one FWHM behind the point (though likely much shorter, since
+  // the certainty should never be lower than unknown behind the measurement).
+  const double sigma = (1-weight)/weight;
+  // This is an approximation: see:
+  // http://en.wikipedia.org/wiki/Full_width_at_half_maximum
+  const double fwhm_meters = 2.355 * sigma;
+
+  // Precompute the curve for this weight and map resolution.
+  const double map_resolution = getResolution();
+  const int fwhm_nodes = fwhm_meters/map_resolution + 1;
+
+  const double p_free = octree_->getProbMiss();
+  const double p_occ = octree_->getProbHit();
+  const double p_unknown = 0.5;
+
+  // We assume the function is symmetrical, and that
+  // p_free < p_unknown < p_occupied.
+  // This allows us to just compute the right half of the Gaussian curve.
+  const double a = 1/(sigma*sqrt(2*pi));
+  const double sigma_squared = sigma*sigma;
+  std::vector<double> weights(fwhm_nodes, p_free);
+  // If sigma is super small, then just use free weights for everything.
+  if (sigma > 0.0001) {
+    for (int i = 0; i < weights.size(); i++) {
+      const double distance_from_point_squared =
+          (i*map_resolution)*(i*map_resolution);
+      weights[i] = p_free + a*exp(-distance_from_point_squared/(2*sigma_squared));
+    }
+  }
+
+  if (params_.sensor_max_range < 0.0 ||
+      (point - sensor_origin).norm() <= params_.sensor_max_range) {
+    // Cast a ray to compute all the free cells.
+    octomap::KeyRay key_ray;
+    if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
+      free_cells->insert(key_ray.begin(), key_ray.end());
+    }
+
+    // Give occupied weights to a region around the measured point.
+    std::vector<octomap::point3d> occupied_ray_front;
+    std::vector<octomap::point3d> occupied_ray_back;
+
+    Eigen::Vector3d point_eigen = pointOctomapToEigen(point);
+    Eigen::Vector3d direction =
+        (point_eigen - pointOctomapToEigen(sensor_origin)).normalize();
+    Eigen::Vector3d closest_end_eigen = point_eigen - direction*fwhm_meters;
+    Eigen::Vector3d farthest_end_eigen = point_eigen + direction*fwhm_meters;
+
+    octomap::OcTreeKey key;
+    if (octree_->coordToKeyChecked(point, key)) {
+      // Insert the center measurement.
+      double occupied_weight = weights[0];
+      insertIntoWeightsMapIfHigher(key, occupied_weight, occupied_cell_weights);
+
+      // Then, cast rays in both directions and add the measurements.
+      for (int i = 0; i < fwhm_nodes; i++) {
+        // Front cast, toward sensor:
+        octomap::point3d coordinate = pointEigenToOctomap(point_eigen - direction*map_resolution*i);
+        occupied_weight = weights[i];
+        if (occupied_weight > p_free) {
+          octree_->coordToKeyChecked(coordinate, key);
+          insertIntoWeightsMapIfHigher(key, occupied_weight, occupied_cell_weights);
+        }
+
+        // Back cast, away from sensor:
+        octomap::point3d coordinate = pointEigenToOctomap(point_eigen - direction*map_resolution*i);
+        occupied_weight = weights[i];
+        if (occupied_weight > p_unknown) {
+          octree_->coordToKeyChecked(coordinate, key);
+          insertIntoWeightsMapIfHigher(key, occupied_weight, occupied_cell_weights);
+        }
+      }
+    }
+  } else {
+    // If the ray is longer than the max range, just update free space.
+    octomap::point3d new_end =
+        sensor_origin +
+        (point - sensor_origin).normalized() * params_.sensor_max_range;
+    octomap::KeyRay key_ray;
+    if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
+      free_cells->insert(key_ray.begin(), key_ray.end());
+    }
+  }
+}
+
+
+void OctomapWorld::updateOccupancyWithWeights(
+    const std::map<octomap::OcTreeKey, double>& occupied_cell_weights,
+    octomap::KeySet* free_cells) {
+  CHECK_NOTNULL(free_cells);
+
+  const double prob_hit = octree_->getProbHit();
+
+  // Mark occupied cells.
+  for (const std::pair<octomap::OcTreeKey, double>& kv : occupied_cell_weights) {
+    octree_->updateNode(kv.first, octomap::logodds(kv.second * prob_hit));
+
+    // Remove any occupied cells from free cells - assume there are far fewer
+    // occupied cells than free cells, so this is much faster than checking on
+    // every free cell.
+    if (free_cells->find(kv.first) != free_cells->end()) {
+      free_cells->erase(kv.first);
+    }
+  }
+
+  // Mark free cells.
+  for (octomap::KeySet::iterator it = free_cells->begin(),
+                                 end = free_cells->end();
+       it != end; ++it) {
+    octree_->updateNode(*it, false);
+  }
+}
+
+void OctomapWorld::insertProjectedDisparityIntoMapWithWeightsImpl(
+    const Transformation& sensor_to_world, const cv::Mat& projected_points,
+    const cv::Mat& weights) {
+  // Get the sensor origin in the world frame.
+  Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
+  sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
+  octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
+
+  octomap::KeySet free_cells;
+  std::map<octomap::OcTreeKey, double> occupied_cell_weights;
+  for (int v = 0; v < projected_points.rows; ++v) {
+    const cv::Vec3f* row_pointer = projected_points.ptr<cv::Vec3f>(v);
+
+    for (int u = 0; u < projected_points.cols; ++u) {
+      // Check whether we're within the correct range for disparity.
+      if (!isValidPoint(row_pointer[u]) || row_pointer[u][2] < 0) {
+        continue;
+      }
+      Eigen::Vector3d point_eigen(row_pointer[u][0], row_pointer[u][1],
+                                  row_pointer[u][2]);
+
+      point_eigen = sensor_to_world * point_eigen;
+
+      castRayWithWeights(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
+              &occupied_cell_weights);
+    }
+  }
+  updateOccupancyWithWeights(occupied_cell_weights, &free_cells);
+}
+
+void OctomapWorld::insertPointcloudIntoMapWithWeightsImpl(
+    const Transformation& sensor_to_world,
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud,
+    const std::vector<double>& weights) {
+  // First, rotate the pointcloud into the world frame.
+  pcl::transformPointCloud(*cloud, *cloud,
+                           sensor_to_world.getTransformationMatrix());
+  // Get the sensor origin in the world frame.
+  Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
+  sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
+  octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
+
+  // Then add all the rays from this pointcloud.
+  // We do this as a batch operation - so first get all the keys in a set, then
+  // do the update in batch.
+  octomap::KeySet free_cells;
+  std::map<octomap::OcTreeKey, double> occupied_cell_weights;
+  for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
+       it != cloud->end(); ++it) {
+    octomap::point3d point(it->x, it->y, it->z);
+    // Check if this is within the allowed sensor range.
+    castRayWithWeights(sensor_origin, point, &free_cells, &occupied_cell_weights);
+  }
+
+  // Apply the new free cells and occupied cells from the weights.
+  updateOccupancyWithWeights(occupied_cell_weights, &free_cells);
+}
+
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,
