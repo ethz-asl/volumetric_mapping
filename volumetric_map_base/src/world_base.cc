@@ -4,6 +4,8 @@
 #include <image_geometry/stereo_camera_model.h>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace volumetric_mapping {
 
@@ -43,8 +45,16 @@ void WorldBase::insertDisparityImage(const Transformation& sensor_to_world,
 
   cv::reprojectImageTo3D(disparity, reprojected_disparities, Q_cv, true);
 
-  // Call the implemnentation function of the inheriting class.
-  insertProjectedDisparityIntoMapImpl(sensor_to_world, reprojected_disparities);
+  // Call the implementation function of the inheriting class.
+  if (!isPointWeighingSet()) {
+    insertProjectedDisparityIntoMapImpl(sensor_to_world,
+                                        reprojected_disparities);
+  } else {
+    cv::Mat weights;
+    computeWeights(disparity, &weights);
+    insertProjectedDisparityIntoMapWithWeightsImpl(
+        sensor_to_world, reprojected_disparities, weights);
+  }
 }
 
 // Helper functions to compute the Q matrix for given UNRECTIFIED camera
@@ -138,6 +148,57 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
   Q(3, 3) = left_fy * (left_cx - right_cx);
 
   return Q;
+}
+
+void WorldBase::insertPointcloud(
+    const Transformation& sensor_to_world,
+    const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg(*cloud_msg, *cloud);
+
+  // Call the implementation function of the inheriting class.
+  if (!isPointWeighingSet()) {
+    insertPointcloudIntoMapImpl(sensor_to_world, cloud);
+  } else {
+    std::vector<double> weights;
+    computeWeights(cloud, &weights);
+    insertPointcloudIntoMapWithWeightsImpl(sensor_to_world, cloud, weights);
+  }
+}
+
+void WorldBase::computeWeights(const cv::Mat& disparity,
+                               cv::Mat* weights) const {
+  *weights = cv::Mat::ones(disparity.rows, disparity.cols, CV_32F);
+
+  if (!point_weighing_) {
+    return;
+  }
+
+  for (int v = 0; v < disparity.rows; ++v) {
+    // Disparity is 32f.
+    const float* row_pointer = disparity.ptr<float>(v);
+    for (int u = 0; u < disparity.cols; ++u) {
+      weights->at<float>(v, u) =
+          point_weighing_->computeWeightForDisparity(u, v, row_pointer[u]);
+    }
+  }
+}
+
+void WorldBase::computeWeights(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                               std::vector<double>* weights) const {
+  weights->resize(cloud->size(), 1.0);
+
+  if (!point_weighing_) {
+    return;
+  }
+
+  unsigned int index = 0;
+  for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
+       it != cloud->end(); ++it) {
+    (*weights)[index] =
+        point_weighing_->computeWeightForPoint(it->x, it->y, it->z);
+    index++;
+  }
 }
 
 }  // namespace volumetric_mapping

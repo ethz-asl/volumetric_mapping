@@ -66,11 +66,6 @@ class OctomapWorld : public WorldBase {
   // current varies from the parameters requested.
   void setOctomapParameters(const OctomapParameters& params);
 
-  // Virtual functions for inserting data.
-  virtual void insertPointcloud(
-      const Transformation& sensor_to_world,
-      const sensor_msgs::PointCloud2::ConstPtr& cloud);
-
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(const Eigen::Vector3d& position,
                        const Eigen::Vector3d& bounding_box_size);
@@ -111,6 +106,11 @@ class OctomapWorld : public WorldBase {
   // Actual implementation for inserting disparity data.
   virtual void insertProjectedDisparityIntoMapImpl(
       const Transformation& sensor_to_world, const cv::Mat& projected_points);
+
+  // Actual implementation for inserting pointclouds.
+  virtual void insertPointcloudIntoMapImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud);
 
  private:
   // Check if the node at the specified key has neighbors or not.
