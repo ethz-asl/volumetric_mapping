@@ -4,6 +4,7 @@
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/filter.h>
 #include <pcl_ros/transforms.h>
 
 namespace volumetric_mapping {
@@ -56,6 +57,10 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
 void OctomapWorld::insertPointcloudIntoMapImpl(
     const Transformation& sensor_to_world,
     const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
+  // Remove NaN values, if any.
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
+
   // First, rotate the pointcloud into the world frame.
   pcl::transformPointCloud(*cloud, *cloud,
                            sensor_to_world.getTransformationMatrix());
