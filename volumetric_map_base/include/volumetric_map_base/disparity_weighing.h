@@ -8,7 +8,9 @@ namespace volumetric_mapping {
 class DisparityWeighing : public PointWeighing {
  public:
   DisparityWeighing(double b, double f, double c_x, double c_y, double delta_d)
-      : b_(b), f_(f), c_x_(c_x), c_y_(c_y), delta_d_(delta_d) {}
+      : b_(b), f_(f), c_x_(c_x), c_y_(c_y), delta_d_(delta_d) {
+    cached_denomenator_ = delta_d_ / (b_ * f_);
+  }
   virtual ~DisparityWeighing() {}
 
   virtual double computeWeightForDisparity(unsigned int u, unsigned int v,
@@ -26,8 +28,9 @@ class DisparityWeighing : public PointWeighing {
     // Lionel Heng, Dominik Honegger, Gim Hee Lee, Lorenz Meier,
     // Petri Tanskanen, Friedrich Fraundorfer, Marc Pollefeys
     Eigen::Vector3d point(x, y, z);
-    double r_p = point.norm();
-    double sigma = r_p * r_p / (b_ * f_) * delta_d_;
+    double r_p_squared = point.squaredNorm();
+    // cached_denomenator_ =  delta_d_ / (b_ * f_)
+    double sigma = r_p_squared * cached_denomenator_;
     double w = 1.0 / (sigma + 1.0);
     return w;
   }
@@ -43,6 +46,9 @@ class DisparityWeighing : public PointWeighing {
   double c_y_;
   // Delta disparity weight, in pixels, 0.5 is a reasonable choice:
   double delta_d_;
+
+  // delta_d_ / (b_ * f_)
+  double cached_denomenator_;
 };
 
 }  // namespace volumetric_mapping
