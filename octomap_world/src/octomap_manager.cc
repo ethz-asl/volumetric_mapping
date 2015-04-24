@@ -85,6 +85,9 @@ void OctomapManager::publishAll() {
   getOctomapBinaryMsg(&binary_map);
   getOctomapFullMsg(&full_map);
 
+  binary_map.header.frame_id = world_frame_;
+  full_map.header.frame_id = world_frame_;
+
   binary_map_pub_.publish(binary_map);
   full_map_pub_.publish(full_map);
 }
