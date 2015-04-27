@@ -53,6 +53,7 @@ class OctomapManager : public OctomapWorld {
   void advertiseServices();
   void advertisePublishers();
 
+  bool setQFromParams(std::vector<double>* Q_vec);
   void calculateQ();
   bool lookupTransform(const std::string& from_frame,
                        const std::string& to_frame, const ros::Time& timestamp,
@@ -93,6 +94,7 @@ class OctomapManager : public OctomapWorld {
   sensor_msgs::CameraInfoPtr right_info_;
 
   // Only calculate Q matrix for disparity once.
+  bool Q_initialized_;
   Eigen::Matrix4d Q_;
   Eigen::Vector2d full_image_size_;
 };
