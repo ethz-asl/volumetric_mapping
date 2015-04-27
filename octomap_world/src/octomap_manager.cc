@@ -11,7 +11,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       world_frame_("world"),
       Q_initialized_(false),
-      Q_(Eigen::Matrix4d::Identity()) {
+      Q_(Eigen::Matrix4d::Identity()),
+      full_image_size_(752, 480) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -34,6 +35,10 @@ void OctomapManager::setParametersFromROS() {
                     params.filter_speckles);
   nh_private_.param("sensor_max_range", params.sensor_max_range,
                     params.sensor_max_range);
+  nh_private_.param("full_image_width", full_image_size_.x(),
+                    full_image_size_.x());
+  nh_private_.param("full_image_height", full_image_size_.y(),
+                    full_image_size_.y());
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -55,7 +60,7 @@ bool OctomapManager::setQFromParams(std::vector<double>* Q_vec) {
   // Try to map the vector as coefficients.
   Eigen::Map<Eigen::Matrix4d> Q_vec_map(Q_vec->data());
   // Copy over to the Q member.
-  Q_ = Q_vec_map;
+  Q_ = Q_vec_map.transpose();
 
   return true;
 }
@@ -196,15 +201,30 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const ros::Time& timestamp,
                                      Transformation* transform) {
   tf::StampedTransform tf_transform;
+
+  ros::Time time_to_lookup = timestamp;
+
+  // If this transform isn't possible at the time, then try to just look up
+  // the latest (this is to work with bag files and static transform publisher,
+  // etc).
+  if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
+    time_to_lookup = ros::Time(0);
+    ROS_WARN("Using latest TF transform instead of timestamp match.");
+  }
+
   try {
-    tf_listener_.lookupTransform(to_frame, from_frame, timestamp, tf_transform);
+    tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
+                                 tf_transform);
   }
   catch (tf::TransformException& ex) {
     ROS_ERROR_STREAM(
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
   }
+
   tf::transformTFToKindr(tf_transform, transform);
+
+  ROS_INFO_STREAM("Transform: " << *transform);
   return true;
 }
 
