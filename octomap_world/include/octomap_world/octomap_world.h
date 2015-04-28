@@ -20,7 +20,7 @@ struct OctomapParameters {
         threshold_max(0.97),
         filter_speckles(true),
         sensor_max_range(5.0),
-        visualize_min_z(std::numeric_limits<double>::min()),
+        visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()) {
     // Set reasonable defaults here...
     // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
