@@ -62,9 +62,10 @@ bool OctomapManager::setQFromParams(std::vector<double>* Q_vec) {
   }
 
   // Try to map the vector as coefficients.
-  Eigen::Map<Eigen::Matrix4d> Q_vec_map(Q_vec->data());
+  Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::RowMajor> > Q_vec_map(
+      Q_vec->data());
   // Copy over to the Q member.
-  Q_ = Q_vec_map.transpose();
+  Q_ = Q_vec_map;
 
   return true;
 }
@@ -178,7 +179,8 @@ void OctomapManager::calculateQ() {
 void OctomapManager::insertDisparityImageWithTf(
     const stereo_msgs::DisparityImageConstPtr& disparity) {
   if (!Q_initialized_) {
-    ROS_WARN("No camera info available yet, skipping adding disparity.");
+    ROS_WARN_THROTTLE(
+        1, "No camera info available yet, skipping adding disparity.");
     return;
   }
 
@@ -227,8 +229,6 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   }
 
   tf::transformTFToKindr(tf_transform, transform);
-
-  ROS_INFO_STREAM("Transform: " << *transform);
   return true;
 }
 
