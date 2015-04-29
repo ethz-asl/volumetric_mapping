@@ -19,7 +19,9 @@ struct OctomapParameters {
         threshold_min(0.12),
         threshold_max(0.97),
         filter_speckles(true),
-        sensor_max_range(5.0) {
+        sensor_max_range(5.0),
+        visualize_min_z(-std::numeric_limits<double>::max()),
+        visualize_max_z(std::numeric_limits<double>::max()) {
     // Set reasonable defaults here...
     // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
@@ -41,6 +43,11 @@ struct OctomapParameters {
   // Maximum range to allow a sensor measurement. Negative values to not
   // filter.
   double sensor_max_range;
+
+  // Minimum and maximum z to visualize. Only used for marker, not full
+  // octomap, visualization.
+  double visualize_min_z;
+  double visualize_max_z;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
