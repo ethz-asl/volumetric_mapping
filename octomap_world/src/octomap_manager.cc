@@ -10,7 +10,9 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       world_frame_("world"),
-      Q_(Eigen::Matrix4d::Identity()) {
+      Q_initialized_(false),
+      Q_(Eigen::Matrix4d::Identity()),
+      full_image_size_(752, 480) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -37,9 +39,35 @@ void OctomapManager::setParametersFromROS() {
                     params.visualize_min_z);
   nh_private_.param("visualize_max_z", params.visualize_max_z,
                     params.visualize_max_z);
+  nh_private_.param("full_image_width", full_image_size_.x(),
+                    full_image_size_.x());
+  nh_private_.param("full_image_height", full_image_size_.y(),
+                    full_image_size_.y());
+
+  // Try to initialize Q matrix from parameters, if available.
+  std::vector<double> Q_vec;
+  if (nh_private_.getParam("Q", Q_vec)) {
+    Q_initialized_ = setQFromParams(&Q_vec);
+  }
 
   // Set the parent class parameters.
   setOctomapParameters(params);
+}
+
+bool OctomapManager::setQFromParams(std::vector<double>* Q_vec) {
+  if (Q_vec->size() != 16) {
+    ROS_ERROR_STREAM("Invalid Q matrix size, expected size: 16, actual size: "
+                     << Q_vec->size());
+    return false;
+  }
+
+  // Try to map the vector as coefficients.
+  Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::RowMajor> > Q_vec_map(
+      Q_vec->data());
+  // Copy over to the Q member.
+  Q_ = Q_vec_map;
+
+  return true;
 }
 
 void OctomapManager::subscribe() {
@@ -129,14 +157,14 @@ bool OctomapManager::saveOctomapCallback(
 void OctomapManager::leftCameraInfoCallback(
     const sensor_msgs::CameraInfoPtr& left_info) {
   left_info_ = left_info;
-  if (left_info_ && right_info_) {
+  if (left_info_ && right_info_ && !Q_initialized_) {
     calculateQ();
   }
 }
 void OctomapManager::rightCameraInfoCallback(
     const sensor_msgs::CameraInfoPtr& right_info) {
   right_info_ = right_info;
-  if (left_info_ && right_info_) {
+  if (left_info_ && right_info_ && !Q_initialized_) {
     calculateQ();
   }
 }
@@ -145,12 +173,14 @@ void OctomapManager::calculateQ() {
   Q_ = getQForROSCameras(*left_info_, *right_info_);
   full_image_size_.x() = left_info_->width;
   full_image_size_.y() = left_info_->height;
+  Q_initialized_ = true;
 }
 
 void OctomapManager::insertDisparityImageWithTf(
     const stereo_msgs::DisparityImageConstPtr& disparity) {
-  if (!(left_info_ && right_info_)) {
-    ROS_WARN("No camera info available yet, skipping adding disparity.");
+  if (!Q_initialized_) {
+    ROS_WARN_THROTTLE(
+        1, "No camera info available yet, skipping adding disparity.");
     return;
   }
 
@@ -177,14 +207,27 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const ros::Time& timestamp,
                                      Transformation* transform) {
   tf::StampedTransform tf_transform;
+
+  ros::Time time_to_lookup = timestamp;
+
+  // If this transform isn't possible at the time, then try to just look up
+  // the latest (this is to work with bag files and static transform publisher,
+  // etc).
+  if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
+    time_to_lookup = ros::Time(0);
+    ROS_WARN("Using latest TF transform instead of timestamp match.");
+  }
+
   try {
-    tf_listener_.lookupTransform(to_frame, from_frame, timestamp, tf_transform);
+    tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
+                                 tf_transform);
   }
   catch (tf::TransformException& ex) {
     ROS_ERROR_STREAM(
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
   }
+
   tf::transformTFToKindr(tf_transform, transform);
   return true;
 }
