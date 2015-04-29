@@ -383,6 +383,14 @@ void OctomapWorld::generateMarkerArray(
   octree_->getMetricMin(min_x, min_y, min_z);
   octree_->getMetricMax(max_x, max_y, max_z);
 
+  // Update values from params if necessary.
+  if (params_.visualize_min_z > min_z) {
+    min_z = params_.visualize_min_z;
+  }
+  if (params_.visualize_max_z < max_z) {
+    max_z = params_.visualize_max_z;
+  }
+
   for (int i = 0; i < tree_depth; ++i) {
     double size = octree_->getNodeSize(i);
 
@@ -404,6 +412,10 @@ void OctomapWorld::generateMarkerArray(
     cube_center.x = it.getX();
     cube_center.y = it.getY();
     cube_center.z = it.getZ();
+
+    if (cube_center.z > max_z || cube_center.z < min_z) {
+      continue;
+    }
 
     int depth_level = it.getDepth();
 

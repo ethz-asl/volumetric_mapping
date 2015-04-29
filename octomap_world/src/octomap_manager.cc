@@ -35,6 +35,10 @@ void OctomapManager::setParametersFromROS() {
                     params.filter_speckles);
   nh_private_.param("sensor_max_range", params.sensor_max_range,
                     params.sensor_max_range);
+  nh_private_.param("visualize_min_z", params.visualize_min_z,
+                    params.visualize_min_z);
+  nh_private_.param("visualize_max_z", params.visualize_max_z,
+                    params.visualize_max_z);
   nh_private_.param("full_image_width", full_image_size_.x(),
                     full_image_size_.x());
   nh_private_.param("full_image_height", full_image_size_.y(),
