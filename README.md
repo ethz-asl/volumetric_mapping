@@ -14,6 +14,7 @@ sudo apt-get install ros-indigo-octomap-mapping
 
 ## Libraries
 **[OctomapWorld](https://github.com/ethz-asl/volumetric_mapping/blob/master/octomap_world/include/octomap_world/octomap_world.h)** - general library for handling insertion of pointclouds, can be run outside of a ROS node, and takes parameters as a struct.
+
 **[OctomapManager](https://github.com/ethz-asl/volumetric_mapping/blob/master/octomap_world/include/octomap_world/octomap_manager.h)** - inherits from OctomapWorld, essentially a ROS wrapper for it. Reads parameters in from the ROS parameter server.
 
 ## Nodes
