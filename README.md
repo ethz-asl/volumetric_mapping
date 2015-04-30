@@ -3,7 +3,9 @@ A repository for 3D volumetric (occupancy) maps, providing a generic interface f
 
 ## Packages
 **volumetric_map_base** - base class/package that all volumetric maps should inherit from, contains methods to handle ROS disparity maps and pointclouds.
+
 **volumetric_msgs** - collection of messages for interacting with various maps.
+
 **octomap_world** - an octomap-based volumetric representation, both with a library and a stand-alone ROS node.
 
 ## Dependencies
