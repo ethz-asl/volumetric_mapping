@@ -254,7 +254,6 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end,
     const Eigen::Vector3d& bounding_box_size) const {
   const double epsilon = 0.001;  // Small offset
-  // First check center line
   CellStatus ret = CellStatus::kFree;
   
   // Check corner connections and depending on resolution also interior:
