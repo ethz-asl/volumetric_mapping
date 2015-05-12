@@ -265,6 +265,14 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
                   ceil ((bounding_box_size[1] + epsilon) / getResolution());
   double z_disc = bounding_box_size[2] /
                   ceil ((bounding_box_size[2] + epsilon) / getResolution());
+  
+  // Ensure that resolution is not infinit 
+  if (x_disc <= 0.0)
+    x_disc = 1.0; 
+  if (y_disc <= 0.0)
+    y_disc = 1.0; 
+  if (z_disc <= 0.0)
+    z_disc = 1.0;
                   
   for (double x = -bounding_box_size[0] / 2.0;
        x <= bounding_box_size[0] / 2.0; x += x_disc) {
