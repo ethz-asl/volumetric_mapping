@@ -253,10 +253,41 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end,
     const Eigen::Vector3d& bounding_box_size) const {
-  LOG(FATAL) << "TODO. This one is harder.";
-  // TODO(helenol): Probably best way would be to get all the coordinates along
-  // the line, then make a set of all the OcTreeKeys in all the bounding boxes
-  // around the nodes... and then just go through and query once.
+  const double epsilon = 0.001;  // Small offset
+  CellStatus ret = CellStatus::kFree;
+  
+  // Check corner connections and depending on resolution also interior:
+  // Discretization step is smaller than the octomap resolution, as this way
+  // no cell can possibly be missed
+  double x_disc = bounding_box_size[0] /
+                  ceil ((bounding_box_size[0] + epsilon) / getResolution());
+  double y_disc = bounding_box_size[1] /
+                  ceil ((bounding_box_size[1] + epsilon) / getResolution());
+  double z_disc = bounding_box_size[2] /
+                  ceil ((bounding_box_size[2] + epsilon) / getResolution());
+  
+  // Ensure that resolution is not infinit 
+  if (x_disc <= 0.0)
+    x_disc = 1.0; 
+  if (y_disc <= 0.0)
+    y_disc = 1.0; 
+  if (z_disc <= 0.0)
+    z_disc = 1.0;
+                  
+  for (double x = -bounding_box_size[0] / 2.0;
+       x <= bounding_box_size[0] / 2.0; x += x_disc) {
+    for (double y = -bounding_box_size[1] / 2.0;
+         y <= bounding_box_size[1] / 2.0; y += y_disc) {
+      for (double z = -bounding_box_size[2] / 2.0;
+           z <= bounding_box_size[2] / 2.0; z += z_disc) {
+        Eigen::Vector3d offset (x, y, z);
+        ret = getLineStatus (start + offset, end + offset);
+        if (ret != CellStatus::kFree)
+          return ret;
+      }
+    }
+  }
+  return CellStatus::kFree;
 }
 
 double OctomapWorld::getResolution() const { return octree_->getResolution(); }
