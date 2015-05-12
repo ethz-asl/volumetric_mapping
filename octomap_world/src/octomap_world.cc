@@ -250,6 +250,37 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
   return CellStatus::kFree;
 }
 
+OctomapWorld::CellStatus OctomapWorld::getOcclusion(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+    bool stopAtUnknownCell) const {
+  // Get all node keys for this line.
+  // This is actually a typedef for a vector of OcTreeKeys.
+  octomap::KeyRay key_ray;
+
+  octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(end),
+                          key_ray);
+                                          
+  octomap::OcTreeKey endKey;
+  
+  endKey = octree_->coordToKey(pointEigenToOctomap(end));
+
+  // Now check if there are any unknown or occupied nodes in the ray,
+  // except for the end key.
+  for (octomap::OcTreeKey key : key_ray) {
+    if (key != endKey) {
+      octomap::OcTreeNode* node = octree_->search(key);
+      if (node == NULL) {
+        if (stopAtUnknownCell) {
+          return CellStatus::kUnknown;
+        }
+      } else if (octree_->isNodeOccupied(node)) {
+        return CellStatus::kOccupied;
+      }
+    }
+  }
+  return CellStatus::kFree;
+}
+
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end,
     const Eigen::Vector3d& bounding_box_size) const {
@@ -265,6 +296,14 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
                   ceil ((bounding_box_size[1] + epsilon) / getResolution());
   double z_disc = bounding_box_size[2] /
                   ceil ((bounding_box_size[2] + epsilon) / getResolution());
+  
+  // Ensure that resolution is not infinit 
+  if (x_disc <= 0.0)
+    x_disc = 1.0; 
+  if (y_disc <= 0.0)
+    y_disc = 1.0; 
+  if (z_disc <= 0.0)
+    z_disc = 1.0;
                   
   for (double x = -bounding_box_size[0] / 2.0;
        x <= bounding_box_size[0] / 2.0; x += x_disc) {
@@ -274,8 +313,9 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
            z <= bounding_box_size[2] / 2.0; z += z_disc) {
         Eigen::Vector3d offset (x, y, z);
         ret = getLineStatus (start + offset, end + offset);
-        if (ret != CellStatus::kFree)
+        if (ret != CellStatus::kFree) {
           return ret;
+        }
       }
     }
   }
