@@ -273,6 +273,42 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                         octree_->getClampingThresMaxLog());
 }
 
+void OctomapWorld::getOccupiedPointcloudInBoundingBox(
+    const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
+    pcl::PointCloud<pcl::PointXYZ>* output_cloud) {
+  CHECK_NOTNULL(output_cloud);
+  output_cloud->clear();
+
+  const double resolution = octree_->getResolution();
+  const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  Eigen::Vector3d epsilon_3d;
+  epsilon_3d.setConstant(epsilon);
+
+  Eigen::Vector3d bbx_min = center - bounding_box_size / 2 - epsilon_3d;
+  Eigen::Vector3d bbx_max = center + bounding_box_size / 2 + epsilon_3d;
+
+  for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
+       x_position += resolution) {
+    for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+         y_position += resolution) {
+      for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
+           z_position += resolution) {
+        octomap::point3d point =
+            octomap::point3d(x_position, y_position, z_position);
+        octomap::OcTreeKey key = octree_->coordToKey(point);
+        // Get the center of the node.
+        point = octree_->keyToCoord(key);
+
+        octomap::OcTreeNode* node = octree_->search(key);
+        if (node != NULL && octree_->isNodeOccupied(node)) {
+          output_cloud->push_back(
+              pcl::PointXYZ(point.x(), point.y(), point.z()));
+        }
+      }
+    }
+  }
+}
+
 void OctomapWorld::setLogOddsBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
     double log_odds_value) {
