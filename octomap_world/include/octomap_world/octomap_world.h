@@ -86,9 +86,9 @@ class OctomapWorld : public WorldBase {
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
   virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
                                    const Eigen::Vector3d& end) const;
-  virtual CellStatus getOcclusion(const Eigen::Vector3d& start,
-                                  const Eigen::Vector3d& end,
-                                  bool stopAtUnknownCell) const;
+  virtual CellStatus getOcclusion(const Eigen::Vector3d& view_point,
+                                  const Eigen::Vector3d& voxel_to_test,
+                                  bool stop_at_unknown_cell) const;
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& bounding_box_size) const;

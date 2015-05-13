@@ -251,23 +251,22 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
 }
 
 OctomapWorld::CellStatus OctomapWorld::getOcclusion(
-    const Eigen::Vector3d& start, const Eigen::Vector3d& end,
-    bool stopAtUnknownCell) const {
+    const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test,
+    bool stop_at_unknown_cell) const {
   // Get all node keys for this line.
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
-  octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(end),
+  octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(voxel_to_test),
                           key_ray);
                                           
-  octomap::OcTreeKey endKey;
-  
-  endKey = octree_->coordToKey(pointEigenToOctomap(end));
+  const octomap::OcTreeKey& voxel_to_test_key =
+                            octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
 
   // Now check if there are any unknown or occupied nodes in the ray,
-  // except for the end key.
+  // except for the voxel_to_test key.
   for (octomap::OcTreeKey key : key_ray) {
-    if (key != endKey) {
+    if (key != voxel_to_test_key) {
       octomap::OcTreeNode* node = octree_->search(key);
       if (node == NULL) {
         if (stopAtUnknownCell) {
