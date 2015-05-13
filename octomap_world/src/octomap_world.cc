@@ -287,9 +287,6 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
   Eigen::Vector3d bbx_min = center - bounding_box_size / 2 - epsilon_3d;
   Eigen::Vector3d bbx_max = center + bounding_box_size / 2 + epsilon_3d;
 
-  // Make sure we add each key at most once.
-  octomap::KeySet occupied_keys;
-
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
     for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
@@ -301,17 +298,11 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
         octomap::OcTreeKey key = octree_->coordToKey(point);
         octomap::OcTreeNode* node = octree_->search(key);
         if (node != NULL && octree_->isNodeOccupied(node)) {
-          occupied_keys.insert(key);
+          output_cloud->push_back(
+            pcl::PointXYZ(point.x(), point.y(), point.z()));
         }
       }
     }
-  }
-
-  for (const octomap::OcTreeKey& key : occupied_keys) {
-    // Get the center of the node.
-    octomap::point3d point = octree_->keyToCoord(key);
-    output_cloud->push_back(
-        pcl::PointXYZ(point.x(), point.y(), point.z()));
   }
 }
 
