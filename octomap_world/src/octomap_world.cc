@@ -257,7 +257,7 @@ OctomapWorld::CellStatus OctomapWorld::getOcclusion(
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
-  octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(voxel_to_test),
+  octree_->computeRayKeys(pointEigenToOctomap(view_point), pointEigenToOctomap(voxel_to_test),
                           key_ray);
                                           
   const octomap::OcTreeKey& voxel_to_test_key =
@@ -269,7 +269,7 @@ OctomapWorld::CellStatus OctomapWorld::getOcclusion(
     if (key != voxel_to_test_key) {
       octomap::OcTreeNode* node = octree_->search(key);
       if (node == NULL) {
-        if (stopAtUnknownCell) {
+        if (stop_at_unknown_cell) {
           return CellStatus::kUnknown;
         }
       } else if (octree_->isNodeOccupied(node)) {
@@ -283,33 +283,39 @@ OctomapWorld::CellStatus OctomapWorld::getOcclusion(
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end,
     const Eigen::Vector3d& bounding_box_size) const {
+  // TODO(helenol): Probably best way would be to get all the coordinates along
+  // the line, then make a set of all the OcTreeKeys in all the bounding boxes
+  // around the nodes... and then just go through and query once.
   const double epsilon = 0.001;  // Small offset
   CellStatus ret = CellStatus::kFree;
+  const double& resolution = getResolution();
   
   // Check corner connections and depending on resolution also interior:
   // Discretization step is smaller than the octomap resolution, as this way
   // no cell can possibly be missed
-  double x_disc = bounding_box_size[0] /
-                  ceil ((bounding_box_size[0] + epsilon) / getResolution());
-  double y_disc = bounding_box_size[1] /
-                  ceil ((bounding_box_size[1] + epsilon) / getResolution());
-  double z_disc = bounding_box_size[2] /
-                  ceil ((bounding_box_size[2] + epsilon) / getResolution());
+  double x_disc = bounding_box_size.x() /
+                  ceil ((bounding_box_size.x() + epsilon) / resolution);
+  double y_disc = bounding_box_size.y() /
+                  ceil ((bounding_box_size.y() + epsilon) / resolution);
+  double z_disc = bounding_box_size.z() /
+                  ceil ((bounding_box_size.z() + epsilon) / resolution);
   
-  // Ensure that resolution is not infinit 
+  // Ensure that resolution is not infinit
   if (x_disc <= 0.0)
     x_disc = 1.0; 
   if (y_disc <= 0.0)
     y_disc = 1.0; 
   if (z_disc <= 0.0)
     z_disc = 1.0;
-                  
-  for (double x = -bounding_box_size[0] / 2.0;
-       x <= bounding_box_size[0] / 2.0; x += x_disc) {
-    for (double y = -bounding_box_size[1] / 2.0;
-         y <= bounding_box_size[1] / 2.0; y += y_disc) {
-      for (double z = -bounding_box_size[2] / 2.0;
-           z <= bounding_box_size[2] / 2.0; z += z_disc) {
+  
+  const Eigen::Vector3d bounding_box_half_size = bounding_box_size  * 0.5;
+  
+  for (double x = -bounding_box_half_size.x();
+       x <= bounding_box_half_size.x(); x += x_disc) {
+    for (double y = -bounding_box_half_size.y();
+         y <= bounding_box_half_size.y(); y += y_disc) {
+      for (double z = -bounding_box_half_size.z();
+           z <= bounding_box_half_size.z(); z += z_disc) {
         Eigen::Vector3d offset (x, y, z);
         ret = getLineStatus (start + offset, end + offset);
         if (ret != CellStatus::kFree) {
