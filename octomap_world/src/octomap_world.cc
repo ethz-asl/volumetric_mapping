@@ -250,7 +250,7 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
   return CellStatus::kFree;
 }
 
-OctomapWorld::CellStatus OctomapWorld::getOcclusion(
+OctomapWorld::CellStatus OctomapWorld::getVisibility(
     const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test,
     bool stop_at_unknown_cell) const {
   // Get all node keys for this line.
