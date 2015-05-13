@@ -89,6 +89,9 @@ class OctomapWorld : public WorldBase {
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& bounding_box_size) const;
+  virtual void getOccupiedPointcloudInBoundingBox(
+      const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
+      pcl::PointCloud<pcl::PointXYZ>* output_cloud);
 
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
