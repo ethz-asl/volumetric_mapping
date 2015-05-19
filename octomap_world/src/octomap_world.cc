@@ -229,6 +229,16 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
   }
 }
 
+double OctomapWorld::getCellStatusPointProbability(
+    const Eigen::Vector3d& point) const {
+  octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
+  if (node == NULL) {
+    return 0.5;
+  } else {
+    return node->getOccupancy();
+  }
+}
+
 OctomapWorld::CellStatus OctomapWorld::getLineStatus(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end) const {
   // Get all node keys for this line.
