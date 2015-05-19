@@ -229,7 +229,7 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
   }
 }
 
-double OctomapWorld::getCellStatusPointProbability(
+double OctomapWorld::getCellProbabilityPoint(
     const Eigen::Vector3d& point) const {
   octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
   if (node == NULL) {
