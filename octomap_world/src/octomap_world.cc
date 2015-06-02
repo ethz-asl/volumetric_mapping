@@ -233,12 +233,14 @@ OctomapWorld::CellStatus OctomapWorld::getCellProbabilityPoint(
     const Eigen::Vector3d& point, double* probability) const {
   octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
   if (node == NULL) {
-    if (probability)
+    if (probability) {
       *probability = -1.0;
+    }
     return CellStatus::kUnknown;
   } else {
-    if (probability)
+    if (probability) {
       *probability = node->getOccupancy();
+    }
     if (octree_->isNodeOccupied(node)) {
       return CellStatus::kOccupied;
     } else {
