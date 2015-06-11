@@ -372,7 +372,7 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
-  // Get correct center of voxel.
+  // Determine correct center of voxel.
   const Eigen::Vector3d center_corrected(resolution*std::floor(center.x()/resolution) + 
       resolution/2.0, resolution*std::floor(center.y()/resolution) + resolution/2.0,
       resolution*std::floor(center.z()/resolution) + resolution/2.0);
