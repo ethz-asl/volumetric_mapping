@@ -21,6 +21,7 @@ class OctomapManager : public OctomapWorld {
   OctomapManager(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   void publishAll();
+  void publishAllEvent(const ros::TimerEvent& e);
 
   // Data insertion callbacks with TF frame resolution through the listener.
   void insertDisparityImageWithTf(
@@ -97,6 +98,8 @@ class OctomapManager : public OctomapWorld {
   bool Q_initialized_;
   Eigen::Matrix4d Q_;
   Eigen::Vector2d full_image_size_;
+  double map_publish_frequency_;
+  ros::Timer map_publish_timer_;
 };
 
 }  // namespace volumetric_mapping

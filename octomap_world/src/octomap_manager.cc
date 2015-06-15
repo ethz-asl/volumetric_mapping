@@ -12,7 +12,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       world_frame_("world"),
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
-      full_image_size_(752, 480) {
+      full_image_size_(752, 480),
+      map_publish_frequency_(0.0) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -43,6 +44,8 @@ void OctomapManager::setParametersFromROS() {
                     full_image_size_.x());
   nh_private_.param("full_image_height", full_image_size_.y(),
                     full_image_size_.y());
+  nh_private_.param("publish_frequency", map_publish_frequency_,
+                    map_publish_frequency_);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -104,6 +107,11 @@ void OctomapManager::advertisePublishers() {
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
   full_map_pub_ =
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
+  
+  if (map_publish_frequency_ > 0.0)
+    map_publish_timer_ = nh_private_.createTimer(ros::Duration(1.0/map_publish_frequency_),
+      &OctomapManager::publishAllEvent, this);
+
 }
 
 void OctomapManager::publishAll() {
@@ -122,6 +130,10 @@ void OctomapManager::publishAll() {
 
   binary_map_pub_.publish(binary_map);
   full_map_pub_.publish(full_map);
+}
+
+void OctomapManager::publishAllEvent(const ros::TimerEvent& e){
+  publishAll();
 }
 
 bool OctomapManager::resetMapCallback(std_srvs::Empty::Request& request,
