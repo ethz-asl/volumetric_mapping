@@ -98,8 +98,8 @@ class OctomapManager : public OctomapWorld {
   bool Q_initialized_;
   Eigen::Matrix4d Q_;
   Eigen::Vector2d full_image_size_;
-  double publish_frequency_;
-  ros::Timer publishing_timer_;
+  double map_publish_frequency_;
+  ros::Timer map_publish_timer_;
 };
 
 }  // namespace volumetric_mapping
