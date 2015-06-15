@@ -44,7 +44,7 @@ void OctomapManager::setParametersFromROS() {
                     full_image_size_.x());
   nh_private_.param("full_image_height", full_image_size_.y(),
                     full_image_size_.y());
-  nh_private_.param("publish_frequency", map_publish_frequency_,
+  nh_private_.param("map_publish_frequency", map_publish_frequency_,
                     map_publish_frequency_);
 
   // Try to initialize Q matrix from parameters, if available.
