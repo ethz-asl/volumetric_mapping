@@ -27,7 +27,7 @@ Listens to disparity and pointcloud messages and adds them to an octomap.
 * `tf_frame` (string, default: "/world") - tf frame name to use for the world.
 * `resolution` (double, default: 0.15) - resolution each grid cell in meters.
 * `Q` (vector of doubles (representing 4x4 matrix, row-major)) - Q projection matrix for disparity projection, in case camera info topics are not available.
-* `map_publish_frequency` (double, default 0) - Frequency at which the Octomap is published for visualization purposes. If set to < 0, the Octomap is not regularly published (use service call instead). 
+* `map_publish_frequency` (double, default 0.0) - Frequency at which the Octomap is published for visualization purposes. If set to < 0.0, the Octomap is not regularly published (use service call instead). 
 
 For other parameters, see [octomap_world.h](https://github.com/ethz-asl/volumetric_mapping/blob/master/octomap_world/include/octomap_world/octomap_world.h#L16-L24).
 
