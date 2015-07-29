@@ -116,7 +116,7 @@ class OctomapWorld : public WorldBase {
 
   // Actual implementation for inserting pointclouds.
   virtual void insertPointcloudIntoMapImpl(
-      const Transformation& sensor_to_world,
+      const Transformation& T_G_sensor,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud);
 
  private:

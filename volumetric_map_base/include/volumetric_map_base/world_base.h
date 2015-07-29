@@ -57,10 +57,17 @@ class WorldBase {
                                     const sensor_msgs::CameraInfo& right_camera)
       const;
 
-  // Non-virtual function that calls insertPointcloudImpl() after converting the
-  // ROS message into a PCL pointcloud.
-  void insertPointcloud(const Transformation& sensor_to_world,
-                        const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+  // Calls insertPointcloudImpl() or insertPointcloudIntoMapWithWeightsImpl(),
+  // depending if points are to be weighted.
+  void insertPointcloud(
+      const Transformation& T_G_sensor,
+      const sensor_msgs::PointCloud2::ConstPtr& p_sensor_cloud);
+  void insertPointcloud(
+      const Eigen::Vector3d& p_G_sensor,
+      const Eigen::Block<Eigen::Matrix3Xd>& p_G_cloud);
+  void insertPointcloud(
+      const Transformation& T_G_sensor,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& p_sensor_cloud);
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
@@ -131,8 +138,8 @@ class WorldBase {
   }
 
   virtual void insertPointcloudIntoMapImpl(
-      const Transformation& sensor_to_world,
-      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud) {
+      const Transformation& T_G_sensor,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& p_sensor_cloud) {
     LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
   }
   virtual void insertPointcloudIntoMapWithWeightsImpl(
