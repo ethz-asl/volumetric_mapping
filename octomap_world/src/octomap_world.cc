@@ -1,7 +1,5 @@
 #include "octomap_world/octomap_world.h"
 
-#include <iostream>  // NOLINT
-
 #include <glog/logging.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
