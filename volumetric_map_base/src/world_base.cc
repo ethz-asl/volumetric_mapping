@@ -152,36 +152,35 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
 
 void WorldBase::insertPointcloud(
     const Transformation& T_G_sensor,
-    const sensor_msgs::PointCloud2::ConstPtr& p_sensor_cloud) {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr p_sensor_cloud_pcl(
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
       new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromROSMsg(*p_sensor_cloud, *p_sensor_cloud_pcl);
-  insertPointcloud(T_G_sensor, p_sensor_cloud_pcl);
+  pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
+  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
 }
 
 // TODO(tcies) Make the virtual function insertPointcloudIntoMapImpl take a
 // signature like this so that the transformation logic doesn't need to be
 // repeated in all derived classes.
 void WorldBase::insertPointcloud(
-    const Eigen::Vector3d& p_G_sensor,
-    const Eigen::Block<Eigen::Matrix3Xd>& p_G_cloud) {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr p_sensor_cloud_pcl(
-        new pcl::PointCloud<pcl::PointXYZ>(p_G_cloud.cols(), 1));
-  p_sensor_cloud_pcl->getMatrixXfMap() =
-      (p_G_cloud.colwise() - p_G_sensor).cast<float>();
-  insertPointcloud(Transformation(Transformation::Rotation(), p_G_sensor),
-                   p_sensor_cloud_pcl);
+    const Transformation& T_G_sensor,
+    const Eigen::Matrix3Xd& pointcloud_sensor) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
+        new pcl::PointCloud<pcl::PointXYZ>(pointcloud_sensor.cols(), 1));
+  pointcloud_sensor_pcl->getMatrixXfMap() = pointcloud_sensor.cast<float>();
+  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
 }
 
 void WorldBase::insertPointcloud(
     const Transformation& T_G_sensor,
-    const pcl::PointCloud<pcl::PointXYZ>::Ptr& p_sensor_cloud) {
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor) {
   if (!isPointWeighingSet()) {
-    insertPointcloudIntoMapImpl(T_G_sensor, p_sensor_cloud);
+    insertPointcloudIntoMapImpl(T_G_sensor, pointcloud_sensor);
   } else {
     std::vector<double> weights;
-    computeWeights(p_sensor_cloud, &weights);
-    insertPointcloudIntoMapWithWeightsImpl(T_G_sensor, p_sensor_cloud, weights);
+    computeWeights(pointcloud_sensor, &weights);
+    insertPointcloudIntoMapWithWeightsImpl(T_G_sensor, pointcloud_sensor,
+                                           weights);
   }
 }
 

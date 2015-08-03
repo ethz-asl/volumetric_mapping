@@ -61,13 +61,13 @@ class WorldBase {
   // depending if points are to be weighted.
   void insertPointcloud(
       const Transformation& T_G_sensor,
-      const sensor_msgs::PointCloud2::ConstPtr& p_sensor_cloud);
-  void insertPointcloud(
-      const Eigen::Vector3d& p_G_sensor,
-      const Eigen::Block<Eigen::Matrix3Xd>& p_G_cloud);
+      const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor);
   void insertPointcloud(
       const Transformation& T_G_sensor,
-      const pcl::PointCloud<pcl::PointXYZ>::Ptr& p_sensor_cloud);
+      const Eigen::Matrix3Xd& pointcloud_sensor);
+  void insertPointcloud(
+      const Transformation& T_G_sensor,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor);
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
