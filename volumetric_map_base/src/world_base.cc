@@ -151,18 +151,36 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
 }
 
 void WorldBase::insertPointcloud(
-    const Transformation& sensor_to_world,
-    const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromROSMsg(*cloud_msg, *cloud);
+    const Transformation& T_G_sensor,
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
+  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
+}
 
-  // Call the implementation function of the inheriting class.
+// TODO(tcies) Make the virtual function insertPointcloudIntoMapImpl take a
+// signature like this so that the transformation logic doesn't need to be
+// repeated in all derived classes.
+void WorldBase::insertPointcloud(
+    const Transformation& T_G_sensor,
+    const Eigen::Matrix3Xd& pointcloud_sensor) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
+        new pcl::PointCloud<pcl::PointXYZ>(pointcloud_sensor.cols(), 1));
+  pointcloud_sensor_pcl->getMatrixXfMap() = pointcloud_sensor.cast<float>();
+  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
+}
+
+void WorldBase::insertPointcloud(
+    const Transformation& T_G_sensor,
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor) {
   if (!isPointWeighingSet()) {
-    insertPointcloudIntoMapImpl(sensor_to_world, cloud);
+    insertPointcloudIntoMapImpl(T_G_sensor, pointcloud_sensor);
   } else {
     std::vector<double> weights;
-    computeWeights(cloud, &weights);
-    insertPointcloudIntoMapWithWeightsImpl(sensor_to_world, cloud, weights);
+    computeWeights(pointcloud_sensor, &weights);
+    insertPointcloudIntoMapWithWeightsImpl(T_G_sensor, pointcloud_sensor,
+                                           weights);
   }
 }
 

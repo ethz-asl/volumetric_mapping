@@ -55,7 +55,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
 }
 
 void OctomapWorld::insertPointcloudIntoMapImpl(
-    const Transformation& sensor_to_world,
+    const Transformation& T_G_sensor,
     const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
   // Remove NaN values, if any.
   std::vector<int> indices;
@@ -63,11 +63,9 @@ void OctomapWorld::insertPointcloudIntoMapImpl(
 
   // First, rotate the pointcloud into the world frame.
   pcl::transformPointCloud(*cloud, *cloud,
-                           sensor_to_world.getTransformationMatrix());
-  // Get the sensor origin in the world frame.
-  Eigen::Vector3d sensor_origin_eigen = Eigen::Vector3d::Zero();
-  sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
-  octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
+                           T_G_sensor.getTransformationMatrix());
+  const octomap::point3d p_G_sensor =
+      pointEigenToOctomap(T_G_sensor.getPosition());
 
   // Then add all the rays from this pointcloud.
   // We do this as a batch operation - so first get all the keys in a set, then
@@ -75,9 +73,9 @@ void OctomapWorld::insertPointcloudIntoMapImpl(
   octomap::KeySet free_cells, occupied_cells;
   for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
        it != cloud->end(); ++it) {
-    octomap::point3d point(it->x, it->y, it->z);
+    const octomap::point3d p_G_point(it->x, it->y, it->z);
     // Check if this is within the allowed sensor range.
-    castRay(sensor_origin, point, &free_cells, &occupied_cells);
+    castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
   }
 
   // Apply the new free cells and occupied cells from
