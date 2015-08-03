@@ -139,7 +139,7 @@ class WorldBase {
 
   virtual void insertPointcloudIntoMapImpl(
       const Transformation& T_G_sensor,
-      const pcl::PointCloud<pcl::PointXYZ>::Ptr& p_sensor_cloud) {
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor) {
     LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
   }
   virtual void insertPointcloudIntoMapWithWeightsImpl(
