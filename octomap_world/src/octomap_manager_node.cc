@@ -10,6 +10,18 @@ int main(int argc, char** argv) {
 
   volumetric_mapping::OctomapManager manager(nh, nh_private);
 
+  // After creating the manager, if the octomap_file parameter is set,
+  // load the octomap at that path and publish it.
+  std::string octomap_file;
+  if (nh_private.getParam("octomap_file", octomap_file)) {
+    if (manager.loadOctomapFromFile(octomap_file)) {
+      ROS_INFO_STREAM("Successfully loaded octomap from path: " << octomap_file);
+      manager.publishAll();
+    } else {
+      ROS_ERROR_STREAM("Could not load octomap from path: " << octomap_file);
+    }
+  }
+
   ros::spin();
   return 0;
 }

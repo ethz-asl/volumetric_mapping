@@ -18,6 +18,7 @@ struct OctomapParameters {
         probability_miss(0.4),
         threshold_min(0.12),
         threshold_max(0.97),
+        threshold_occupancy(0.7),
         filter_speckles(true),
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
@@ -36,6 +37,8 @@ struct OctomapParameters {
   // values are treated the same.
   double threshold_min;
   double threshold_max;
+  // Threshold considered for a cell to be occupied.
+  double threshold_occupancy;
 
   // Filter neighbor-less nodes as 'speckles'.
   bool filter_speckles;

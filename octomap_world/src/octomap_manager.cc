@@ -32,6 +32,8 @@ void OctomapManager::setParametersFromROS() {
                     params.threshold_min);
   nh_private_.param("threshold_max", params.threshold_max,
                     params.threshold_max);
+  nh_private_.param("threshold_occupancy", params.threshold_occupancy,
+                    params.threshold_occupancy);
   nh_private_.param("filter_speckles", params.filter_speckles,
                     params.filter_speckles);
   nh_private_.param("sensor_max_range", params.sensor_max_range,
@@ -107,7 +109,7 @@ void OctomapManager::advertisePublishers() {
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
   full_map_pub_ =
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
-  
+
   if (map_publish_frequency_ > 0.0)
     map_publish_timer_ = nh_private_.createTimer(ros::Duration(1.0/map_publish_frequency_),
       &OctomapManager::publishAllEvent, this);
