@@ -48,6 +48,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   octree_->setProbMiss(params.probability_miss);
   octree_->setClampingThresMin(params.threshold_min);
   octree_->setClampingThresMax(params.threshold_max);
+  octree_->setOccupancyThres(params.threshold_occupancy);
 
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
@@ -277,7 +278,7 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
 
   octree_->computeRayKeys(pointEigenToOctomap(view_point), pointEigenToOctomap(voxel_to_test),
                           key_ray);
-                                          
+
   const octomap::OcTreeKey& voxel_to_test_key =
                             octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
 
@@ -307,7 +308,7 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   const double epsilon = 0.001;  // Small offset
   CellStatus ret = CellStatus::kFree;
   const double& resolution = getResolution();
-  
+
   // Check corner connections and depending on resolution also interior:
   // Discretization step is smaller than the octomap resolution, as this way
   // no cell can possibly be missed
@@ -317,17 +318,17 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
                   ceil ((bounding_box_size.y() + epsilon) / resolution);
   double z_disc = bounding_box_size.z() /
                   ceil ((bounding_box_size.z() + epsilon) / resolution);
-  
+
   // Ensure that resolution is not infinit
   if (x_disc <= 0.0)
-    x_disc = 1.0; 
+    x_disc = 1.0;
   if (y_disc <= 0.0)
-    y_disc = 1.0; 
+    y_disc = 1.0;
   if (z_disc <= 0.0)
     z_disc = 1.0;
-  
+
   const Eigen::Vector3d bounding_box_half_size = bounding_box_size  * 0.5;
-  
+
   for (double x = -bounding_box_half_size.x();
        x <= bounding_box_half_size.x(); x += x_disc) {
     for (double y = -bounding_box_half_size.y();
@@ -371,7 +372,7 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
   epsilon_3d.setConstant(epsilon);
 
   // Determine correct center of voxel.
-  const Eigen::Vector3d center_corrected(resolution*std::floor(center.x()/resolution) + 
+  const Eigen::Vector3d center_corrected(resolution*std::floor(center.x()/resolution) +
       resolution/2.0, resolution*std::floor(center.y()/resolution) + resolution/2.0,
       resolution*std::floor(center.z()/resolution) + resolution/2.0);
 
