@@ -124,7 +124,7 @@ class WorldBase {
   virtual void getMapBounds(Eigen::Vector3d* min_bound,
                             Eigen::Vector3d* max_bound) const {
     CHECK_NOTNULL(min_bound);
-    CHECK_NOTNULL(max_bound)
+    CHECK_NOTNULL(max_bound);
     *min_bound = Eigen::Vector3d(std::numeric_limits<double>::min(),
                                  std::numeric_limits<double>::min(),
                                  std::numeric_limits<double>::min());
