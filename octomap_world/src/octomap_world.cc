@@ -362,7 +362,7 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
 
 void OctomapWorld::getOccupiedPointcloudInBoundingBox(
     const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-    pcl::PointCloud<pcl::PointXYZ>* output_cloud) {
+    pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
   CHECK_NOTNULL(output_cloud);
   output_cloud->clear();
 

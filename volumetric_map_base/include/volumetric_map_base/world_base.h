@@ -98,7 +98,7 @@ class WorldBase {
 
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-      pcl::PointCloud<pcl::PointXYZ>* output_cloud) {
+      pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
     // Blank world by default, so don't fill the pointcloud.
     return;
   }
@@ -123,6 +123,10 @@ class WorldBase {
     return Eigen::Vector3d(std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max());
+  }
+  virtual void getMapBounds(Eigen::Vector3d* min_bound,
+                            Eigen::Vector3d* max_bound) const {
+
   }
 
   // Weighing class for points -> affect the weight of each point inserted

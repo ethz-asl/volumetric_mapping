@@ -98,7 +98,7 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& bounding_box_size) const;
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-      pcl::PointCloud<pcl::PointXYZ>* output_cloud);
+      pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
 
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
