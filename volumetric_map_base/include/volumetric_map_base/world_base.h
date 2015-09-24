@@ -103,6 +103,19 @@ class WorldBase {
     return;
   }
 
+  // Collision checking with a robot model.
+  virtual void setRobotSize(const Eigen::Vector3d& dimensions) {
+    return;
+  }
+  virtual bool checkCollisionWithRobot(const Transformation& robot_pose) {
+    return false;
+  }
+  // Checks a path (assumed to be time-ordered) for collision.
+  // Sets the second input to the index at which the collision occurred.
+  virtual bool checkPathForCollisionsWithRobot(/* Input here? */) {
+    return false;
+  }
+
   virtual Eigen::Vector3d getMapCenter() const {
     return Eigen::Vector3d::Zero();
   }
