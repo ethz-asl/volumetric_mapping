@@ -103,6 +103,8 @@ class OctomapWorld : public WorldBase {
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
   virtual Eigen::Vector3d getMapSize() const;
+  virtual void getMapBounds(Eigen::Vector3d* min_bound,
+                                Eigen::Vector3d* max_bound) const;
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;

@@ -658,4 +658,17 @@ Eigen::Vector3d OctomapWorld::getMapSize() const {
   return Eigen::Vector3d(max_x - min_x, max_y - min_y, max_z - min_z);
 }
 
+void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
+                                Eigen::Vector3d* max_bound) const {
+  CHECK_NOTNULL(min_bound);
+  CHECK_NOTNULL(max_bound);
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  *min_bound = Eigen::Vector3d(min_x, min_y, min_z);
+  *max_bound = Eigen::Vector3d(max_x, max_y, max_z);
+}
+
 }  // namespace volumetric_mapping
