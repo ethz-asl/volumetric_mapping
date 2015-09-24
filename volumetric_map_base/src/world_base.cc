@@ -162,11 +162,10 @@ void WorldBase::insertPointcloud(
 // TODO(tcies) Make the virtual function insertPointcloudIntoMapImpl take a
 // signature like this so that the transformation logic doesn't need to be
 // repeated in all derived classes.
-void WorldBase::insertPointcloud(
-    const Transformation& T_G_sensor,
-    const Eigen::Matrix3Xd& pointcloud_sensor) {
+void WorldBase::insertPointcloud(const Transformation& T_G_sensor,
+                                 const Eigen::Matrix3Xd& pointcloud_sensor) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
-        new pcl::PointCloud<pcl::PointXYZ>(pointcloud_sensor.cols(), 1));
+      new pcl::PointCloud<pcl::PointXYZ>(pointcloud_sensor.cols(), 1));
   pointcloud_sensor_pcl->getMatrixXfMap() = pointcloud_sensor.cast<float>();
   insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
 }

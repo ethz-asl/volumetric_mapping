@@ -62,9 +62,8 @@ class WorldBase {
   void insertPointcloud(
       const Transformation& T_G_sensor,
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor);
-  void insertPointcloud(
-      const Transformation& T_G_sensor,
-      const Eigen::Matrix3Xd& pointcloud_sensor);
+  void insertPointcloud(const Transformation& T_G_sensor,
+                        const Eigen::Matrix3Xd& pointcloud_sensor);
   void insertPointcloud(
       const Transformation& T_G_sensor,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor);
@@ -104,9 +103,7 @@ class WorldBase {
   }
 
   // Collision checking with a robot model.
-  virtual void setRobotSize(const Eigen::Vector3d& dimensions) {
-    return;
-  }
+  virtual void setRobotSize(const Eigen::Vector3d& dimensions) { return; }
   virtual bool checkCollisionWithRobot(const Transformation& robot_pose) {
     return false;
   }
@@ -129,11 +126,11 @@ class WorldBase {
     CHECK_NOTNULL(min_bound);
     CHECK_NOTNULL(max_bound)
     *min_bound = Eigen::Vector3d(std::numeric_limits<double>::min(),
-                           std::numeric_limits<double>::min(),
-                           std::numeric_limits<double>::min());
+                                 std::numeric_limits<double>::min(),
+                                 std::numeric_limits<double>::min());
     *max_bound = Eigen::Vector3d(std::numeric_limits<double>::max(),
-                           std::numeric_limits<double>::max(),
-                           std::numeric_limits<double>::max());
+                                 std::numeric_limits<double>::max(),
+                                 std::numeric_limits<double>::max());
   }
 
   // Weighing class for points -> affect the weight of each point inserted

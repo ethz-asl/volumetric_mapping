@@ -276,11 +276,11 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
-  octree_->computeRayKeys(pointEigenToOctomap(view_point), pointEigenToOctomap(voxel_to_test),
-                          key_ray);
+  octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                          pointEigenToOctomap(voxel_to_test), key_ray);
 
   const octomap::OcTreeKey& voxel_to_test_key =
-                            octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
+      octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
 
   // Now check if there are any unknown or occupied nodes in the ray,
   // except for the voxel_to_test key.
@@ -313,30 +313,27 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   // Discretization step is smaller than the octomap resolution, as this way
   // no cell can possibly be missed
   double x_disc = bounding_box_size.x() /
-                  ceil ((bounding_box_size.x() + epsilon) / resolution);
+                  ceil((bounding_box_size.x() + epsilon) / resolution);
   double y_disc = bounding_box_size.y() /
-                  ceil ((bounding_box_size.y() + epsilon) / resolution);
+                  ceil((bounding_box_size.y() + epsilon) / resolution);
   double z_disc = bounding_box_size.z() /
-                  ceil ((bounding_box_size.z() + epsilon) / resolution);
+                  ceil((bounding_box_size.z() + epsilon) / resolution);
 
   // Ensure that resolution is not infinit
-  if (x_disc <= 0.0)
-    x_disc = 1.0;
-  if (y_disc <= 0.0)
-    y_disc = 1.0;
-  if (z_disc <= 0.0)
-    z_disc = 1.0;
+  if (x_disc <= 0.0) x_disc = 1.0;
+  if (y_disc <= 0.0) y_disc = 1.0;
+  if (z_disc <= 0.0) z_disc = 1.0;
 
-  const Eigen::Vector3d bounding_box_half_size = bounding_box_size  * 0.5;
+  const Eigen::Vector3d bounding_box_half_size = bounding_box_size * 0.5;
 
-  for (double x = -bounding_box_half_size.x();
-       x <= bounding_box_half_size.x(); x += x_disc) {
+  for (double x = -bounding_box_half_size.x(); x <= bounding_box_half_size.x();
+       x += x_disc) {
     for (double y = -bounding_box_half_size.y();
          y <= bounding_box_half_size.y(); y += y_disc) {
       for (double z = -bounding_box_half_size.z();
            z <= bounding_box_half_size.z(); z += z_disc) {
-        Eigen::Vector3d offset (x, y, z);
-        ret = getLineStatus (start + offset, end + offset);
+        Eigen::Vector3d offset(x, y, z);
+        ret = getLineStatus(start + offset, end + offset);
         if (ret != CellStatus::kFree) {
           return ret;
         }
@@ -372,12 +369,15 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
   epsilon_3d.setConstant(epsilon);
 
   // Determine correct center of voxel.
-  const Eigen::Vector3d center_corrected(resolution*std::floor(center.x()/resolution) +
-      resolution/2.0, resolution*std::floor(center.y()/resolution) + resolution/2.0,
-      resolution*std::floor(center.z()/resolution) + resolution/2.0);
+  const Eigen::Vector3d center_corrected(
+      resolution * std::floor(center.x() / resolution) + resolution / 2.0,
+      resolution * std::floor(center.y() / resolution) + resolution / 2.0,
+      resolution * std::floor(center.z() / resolution) + resolution / 2.0);
 
-  Eigen::Vector3d bbx_min = center_corrected - bounding_box_size / 2 - epsilon_3d;
-  Eigen::Vector3d bbx_max = center_corrected + bounding_box_size / 2 + epsilon_3d;
+  Eigen::Vector3d bbx_min =
+      center_corrected - bounding_box_size / 2 - epsilon_3d;
+  Eigen::Vector3d bbx_max =
+      center_corrected + bounding_box_size / 2 + epsilon_3d;
 
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
@@ -391,7 +391,7 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
         octomap::OcTreeNode* node = octree_->search(key);
         if (node != NULL && octree_->isNodeOccupied(node)) {
           output_cloud->push_back(
-            pcl::PointXYZ(point.x(), point.y(), point.z()));
+              pcl::PointXYZ(point.x(), point.y(), point.z()));
         }
       }
     }

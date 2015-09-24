@@ -87,12 +87,13 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& point,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
-  virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point, double* probability) const;
+  virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point,
+                                             double* probability) const;
   virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
                                    const Eigen::Vector3d& end) const;
   virtual CellStatus getVisibility(const Eigen::Vector3d& view_point,
-                                  const Eigen::Vector3d& voxel_to_test,
-                                  bool stop_at_unknown_cell) const;
+                                   const Eigen::Vector3d& voxel_to_test,
+                                   bool stop_at_unknown_cell) const;
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& bounding_box_size) const;
@@ -104,7 +105,7 @@ class OctomapWorld : public WorldBase {
   virtual Eigen::Vector3d getMapCenter() const;
   virtual Eigen::Vector3d getMapSize() const;
   virtual void getMapBounds(Eigen::Vector3d* min_bound,
-                                Eigen::Vector3d* max_bound) const;
+                            Eigen::Vector3d* max_bound) const;
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;
