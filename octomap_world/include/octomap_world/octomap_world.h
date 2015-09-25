@@ -3,11 +3,12 @@
 
 #include <string>
 
+#include <fcl/collision_object.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
-#include <volumetric_map_base/world_base.h>
 #include <std_msgs/ColorRGBA.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <volumetric_map_base/world_base.h>
 
 namespace volumetric_mapping {
 
@@ -107,6 +108,14 @@ class OctomapWorld : public WorldBase {
   virtual void getMapBounds(Eigen::Vector3d* min_bound,
                             Eigen::Vector3d* max_bound) const;
 
+  // Collision checking with robot model. Implemented with FCL.
+  // Cylinder model: y is ignored, x is diameter.
+  virtual void setRobotSize(const Eigen::Vector3d& dimensions);
+  virtual bool checkCollisionWithRobot(const Transformation& robot_pose);
+  // Checks a path (assumed to be time-ordered) for collision.
+  // Sets the second input to the index at which the collision occurred.
+  virtual bool checkPathForCollisionsWithRobot(/* Input here? */);
+
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;
   bool getOctomapFullMsg(octomap_msgs::Octomap* msg) const;
@@ -153,11 +162,28 @@ class OctomapWorld : public WorldBase {
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
 
   double colorizeMapByHeight(double z, double min_z, double max_z) const;
+
+  // FCL methods.
+  void updateCollisionGeometry();
+  bool checkSinglePoseCollision(const Transformation& robot_pose) const;
+  static void poseToFcl(const Eigen::Vector3d& robot_position,
+    const Eigen::Quaterniond& robot_orientation,
+    fcl::Vec3f* trans, fcl::Vec3f* rot);
+
+
   std_msgs::ColorRGBA percentToColor(double h) const;
 
   std::shared_ptr<octomap::OcTree> octree_;
 
   OctomapParameters params_;
+
+  // Members for FCL robot collision checking
+  std::shared_ptr<fcl::CollisionGeometry> robot_geometry_;
+  // This caches the octomap geometry from collision requests. If the octomap
+  // is not updated between collision checks, this does not need to be
+  // regenerated.
+  std::shared_ptr<fcl::CollisionGeometry> octomap_geometry_cached_;
+  bool octomap_changed_since_collision_;
 };
 
 }  // namespace volumetric_mapping

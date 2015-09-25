@@ -8,6 +8,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
 #include <pcl/conversions.h>
+#include <Eigen/StdVector>
 
 #include "volumetric_map_base/point_weighing.h"
 
@@ -104,12 +105,14 @@ class WorldBase {
 
   // Collision checking with a robot model.
   virtual void setRobotSize(const Eigen::Vector3d& dimensions) { return; }
-  virtual bool checkCollisionWithRobot(const Transformation& robot_pose) {
+  virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
     return false;
   }
   // Checks a path (assumed to be time-ordered) for collision.
   // Sets the second input to the index at which the collision occurred.
-  virtual bool checkPathForCollisionsWithRobot(/* Input here? */) {
+  virtual bool checkPathForCollisionsWithRobot(
+    const std::vector<Eigen::Vector3d>& robot_positions,
+    size_t* collision_index) {
     return false;
   }
 
