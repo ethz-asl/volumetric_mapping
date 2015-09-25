@@ -701,9 +701,22 @@ bool OctomapWorld::checkPathForCollisionsWithRobot(
     const std::vector<Eigen::Vector3d>& robot_positions,
     size_t* collision_index) {
   updateCollisionGeometry();
+
+  Eigen::Quaterniond q_identity = Eigen::Quaterniond::Identity();
+
   // Iterate over vector of poses.
   // Check each one.
-  // Return when a collision is found, and return the index.
+  // Return when a collision is found, and return the index of the earliest
+  // collision.
+  for (size_t i = 0; i < robot_positions.size(); ++i) {
+    if (checkSinglePoseCollision(robot_positions[i], q_identity)) {
+      if (collision_index != nullptr) {
+        *collision_index = i;
+      }
+      return true;
+    }
+  }
+  return false;
 }
 
 void OctomapWorld::updateCollisionGeometry() {
@@ -720,6 +733,11 @@ void OctomapWorld::updateCollisionGeometry() {
 bool OctomapWorld::checkSinglePoseCollision(
     const Eigen::Vector3d& robot_position,
     const Eigen::Quaterniond& robot_orientation) const {
+  if (robot_geometry_ == nullptr ||  octomap_geometry_cached_ == nullptr) {
+    LOG(WARNING) << "Trying to check collisions without robot geometry set up!";
+    return true;
+  }
+
   fcl::Quaternion3f rot;
   fcl::Vec3f pos;
   fcl::Transform3f transform;
