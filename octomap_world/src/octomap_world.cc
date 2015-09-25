@@ -26,7 +26,7 @@ OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
 OctomapWorld::OctomapWorld(const OctomapParameters& params)
-  : octomap_changed_since_collision_(false) {
+    : octomap_changed_since_collision_(false) {
   setOctomapParameters(params);
 }
 
@@ -689,12 +689,14 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
 void OctomapWorld::setRobotSize(const Eigen::Vector3d& dimensions) {
   // Cylinder model: y is ignored, x is diameter.
   robot_geometry_.reset(
-      new fcl::Cylinder(dimensions.x()/2.0, dimensions.z()));
+      new fcl::Cylinder(dimensions.x() / 2.0, dimensions.z()));
 }
 
-bool OctomapWorld::checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
+bool OctomapWorld::checkCollisionWithRobot(
+    const Eigen::Vector3d& robot_position) {
   updateCollisionGeometry();
-  return checkSinglePoseCollision(robot_position, Eigen::Quaterniond::Identity());
+  return checkSinglePoseCollision(robot_position,
+                                  Eigen::Quaterniond::Identity());
 }
 
 bool OctomapWorld::checkPathForCollisionsWithRobot(
@@ -733,7 +735,7 @@ void OctomapWorld::updateCollisionGeometry() {
 bool OctomapWorld::checkSinglePoseCollision(
     const Eigen::Vector3d& robot_position,
     const Eigen::Quaterniond& robot_orientation) const {
-  if (robot_geometry_ == nullptr ||  octomap_geometry_cached_ == nullptr) {
+  if (robot_geometry_ == nullptr || octomap_geometry_cached_ == nullptr) {
     LOG(WARNING) << "Trying to check collisions without robot geometry set up!";
     return true;
   }
@@ -747,20 +749,17 @@ bool OctomapWorld::checkSinglePoseCollision(
 
   fcl::CollisionRequest collision_request;
   fcl::CollisionResult collision_result;
-  bool collision = fcl::collide(robot_geometry_.get(), transform,
-                                octomap_geometry_cached_.get(),
-                                fcl::Transform3f(),
-                                collision_request,
-                                collision_result) > 0;
+  bool collision =
+      fcl::collide(robot_geometry_.get(), transform,
+                   octomap_geometry_cached_.get(), fcl::Transform3f(),
+                   collision_request, collision_result) > 0;
   return collision;
 }
 
 void OctomapWorld::poseToFcl(const Eigen::Vector3d& robot_position,
-    const Eigen::Quaterniond& robot_orientation,
-    fcl::Vec3f* trans, fcl::Quaternion3f* rot) {
-  trans->setValue(robot_position.x(),
-                  robot_position.y(),
-                  robot_position.z());
+                             const Eigen::Quaterniond& robot_orientation,
+                             fcl::Vec3f* trans, fcl::Quaternion3f* rot) {
+  trans->setValue(robot_position.x(), robot_position.y(), robot_position.z());
   rot->getW() = robot_orientation.w();
   rot->getX() = robot_orientation.x();
   rot->getY() = robot_orientation.y();

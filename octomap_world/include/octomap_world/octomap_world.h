@@ -167,13 +167,12 @@ class OctomapWorld : public WorldBase {
 
   // FCL methods.
   void updateCollisionGeometry();
-  bool checkSinglePoseCollision(
-    const Eigen::Vector3d& robot_position,
-    const Eigen::Quaterniond& robot_orientation) const;
+  bool checkSinglePoseCollision(const Eigen::Vector3d& robot_position,
+                                const Eigen::Quaterniond& robot_orientation)
+      const;
   static void poseToFcl(const Eigen::Vector3d& robot_position,
-    const Eigen::Quaterniond& robot_orientation,
-    fcl::Vec3f* trans, fcl::Quaternion3f* rot);
-
+                        const Eigen::Quaterniond& robot_orientation,
+                        fcl::Vec3f* trans, fcl::Quaternion3f* rot);
 
   std_msgs::ColorRGBA percentToColor(double h) const;
 
