@@ -1,11 +1,15 @@
 #include "octomap_world/octomap_world.h"
 
+#include <fcl/octree.h>
+#include <fcl/shape/geometric_shapes.h>
 #include <glog/logging.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl_ros/transforms.h>
+#include <fcl/collision.h>
+#include <fcl/collision_object.h>
 
 namespace volumetric_mapping {
 
@@ -685,7 +689,7 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
 void OctomapWorld::setRobotSize(const Eigen::Vector3d& dimensions) {
   // Cylinder model: y is ignored, x is diameter.
   robot_geometry_.reset(
-      new fcl::Cylinder(bounding_box.x()/2.0, bounding_box.z()));
+      new fcl::Cylinder(dimensions.x()/2.0, dimensions.z()));
 }
 
 bool OctomapWorld::checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
@@ -693,7 +697,9 @@ bool OctomapWorld::checkCollisionWithRobot(const Eigen::Vector3d& robot_position
   return checkSinglePoseCollision(robot_position, Eigen::Quaterniond::Identity());
 }
 
-bool OctomapWorld::checkPathForCollisionsWithRobot(/* Input here? */) {
+bool OctomapWorld::checkPathForCollisionsWithRobot(
+    const std::vector<Eigen::Vector3d>& robot_positions,
+    size_t* collision_index) {
   updateCollisionGeometry();
   // Iterate over vector of poses.
   // Check each one.
@@ -718,7 +724,7 @@ bool OctomapWorld::checkSinglePoseCollision(
   fcl::Vec3f pos;
   fcl::Transform3f transform;
 
-  transformToFcl(robot_position, robot_orientation, &pos, &rot);
+  poseToFcl(robot_position, robot_orientation, &pos, &rot);
   transform.setTransform(rot, pos);
 
   fcl::CollisionRequest collision_request;
@@ -733,14 +739,14 @@ bool OctomapWorld::checkSinglePoseCollision(
 
 void OctomapWorld::poseToFcl(const Eigen::Vector3d& robot_position,
     const Eigen::Quaterniond& robot_orientation,
-    fcl::Vec3f* trans, fcl::Vec3f* rot) {
+    fcl::Vec3f* trans, fcl::Quaternion3f* rot) {
   trans->setValue(robot_position.x(),
                   robot_position.y(),
                   robot_position.z());
-  quat->getW() = robot_orientation.w();
-  quat->getX() = robot_orientation.x();
-  quat->getY() = robot_orientation.y();
-  quat->getZ() = robot_orientation.z();
+  rot->getW() = robot_orientation.w();
+  rot->getX() = robot_orientation.x();
+  rot->getY() = robot_orientation.y();
+  rot->getZ() = robot_orientation.z();
 }
 
 }  // namespace volumetric_mapping

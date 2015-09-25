@@ -111,10 +111,12 @@ class OctomapWorld : public WorldBase {
   // Collision checking with robot model. Implemented with FCL.
   // Cylinder model: y is ignored, x is diameter.
   virtual void setRobotSize(const Eigen::Vector3d& dimensions);
-  virtual bool checkCollisionWithRobot(const Transformation& robot_pose);
+  virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position);
   // Checks a path (assumed to be time-ordered) for collision.
   // Sets the second input to the index at which the collision occurred.
-  virtual bool checkPathForCollisionsWithRobot(/* Input here? */);
+  virtual bool checkPathForCollisionsWithRobot(
+      const std::vector<Eigen::Vector3d>& robot_positions,
+      size_t* collision_index);
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;
@@ -165,10 +167,12 @@ class OctomapWorld : public WorldBase {
 
   // FCL methods.
   void updateCollisionGeometry();
-  bool checkSinglePoseCollision(const Transformation& robot_pose) const;
+  bool checkSinglePoseCollision(
+    const Eigen::Vector3d& robot_position,
+    const Eigen::Quaterniond& robot_orientation) const;
   static void poseToFcl(const Eigen::Vector3d& robot_position,
     const Eigen::Quaterniond& robot_orientation,
-    fcl::Vec3f* trans, fcl::Vec3f* rot);
+    fcl::Vec3f* trans, fcl::Quaternion3f* rot);
 
 
   std_msgs::ColorRGBA percentToColor(double h) const;
