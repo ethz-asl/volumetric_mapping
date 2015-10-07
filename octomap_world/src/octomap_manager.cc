@@ -97,6 +97,8 @@ void OctomapManager::advertiseServices() {
       "save_map", &OctomapManager::saveOctomapCallback, this);
   load_octree_service_ = nh_private_.advertiseService(
       "load_map", &OctomapManager::loadOctomapCallback, this);
+  load_octree_service_ = nh_private_.advertiseService(
+      "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
 }
 
 void OctomapManager::advertisePublishers() {
@@ -166,6 +168,22 @@ bool OctomapManager::saveOctomapCallback(
     volumetric_msgs::SaveMap::Request& request,
     volumetric_msgs::SaveMap::Response& response) {
   return writeOctomapToFile(request.file_path);
+}
+
+bool setBoxOccupancyCallback(volumetric_msgs::SetBoxOccupancy::Request& request,
+                           volumetric_msgs::SetBoxOccupancy::Response& response) {
+  Eigen::Vector3d bounding_box_center;
+  Eigen::Vector3d bounding_box_size;
+
+  tf::vectorMsgToKindr(request.box_center, &bounding_box_center);
+  tf::vectorMsgToKindr(request.box_size, &bounding_box_size);
+  bool set_occupied = request.set_occupied;
+
+  if (set_occupied) {
+    setOccupied(bounding_box_center, bounding_box_size);
+  } else {
+    setFree(bounding_box_center, bounding_box_size);
+  }
 }
 
 void OctomapManager::leftCameraInfoCallback(
