@@ -686,10 +686,8 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
   *max_bound = Eigen::Vector3d(max_x, max_y, max_z);
 }
 
-void OctomapWorld::setRobotSize(const Eigen::Vector3d& dimensions) {
-  // Cylinder model: y is ignored, x is diameter.
-  robot_geometry_.reset(
-      new fcl::Cylinder(dimensions.x() / 2.0, dimensions.z()));
+void OctomapWorld::setRobotSize(double diameter, double height) {
+  robot_geometry_.reset(new fcl::Cylinder(diameter / 2.0, height));
 }
 
 bool OctomapWorld::checkCollisionWithRobot(

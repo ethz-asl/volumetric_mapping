@@ -109,8 +109,8 @@ class OctomapWorld : public WorldBase {
                             Eigen::Vector3d* max_bound) const;
 
   // Collision checking with robot model. Implemented with FCL.
-  // Cylinder model: y is ignored, x is diameter.
-  virtual void setRobotSize(const Eigen::Vector3d& dimensions);
+  // Cylinder model with given diameter and height.
+  virtual void setRobotSize(double diameter, double height);
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position);
   // Checks a path (assumed to be time-ordered) for collision.
   // Sets the second input to the index at which the collision occurred.
