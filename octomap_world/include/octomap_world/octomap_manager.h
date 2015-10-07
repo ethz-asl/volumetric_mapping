@@ -8,6 +8,7 @@
 #include <octomap_msgs/GetOctomap.h>
 #include <volumetric_msgs/LoadMap.h>
 #include <volumetric_msgs/SaveMap.h>
+#include <volumetric_msgs/SetBoxOccupancy.h>
 
 namespace volumetric_mapping {
 
@@ -43,9 +44,12 @@ class OctomapManager : public OctomapWorld {
 
   bool loadOctomapCallback(volumetric_msgs::LoadMap::Request& request,
                            volumetric_msgs::LoadMap::Response& response);
-
   bool saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
                            volumetric_msgs::SaveMap::Response& response);
+
+  bool setBoxOccupancyCallback(
+      volumetric_msgs::SetBoxOccupancy::Request& request,
+      volumetric_msgs::SetBoxOccupancy::Response& response);
 
  private:
   // Sets up subscriptions based on ROS node parameters.
@@ -89,6 +93,7 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer get_map_service_;
   ros::ServiceServer save_octree_service_;
   ros::ServiceServer load_octree_service_;
+  ros::ServiceServer set_box_occupancy_service_;
 
   // Keep state of the cameras.
   sensor_msgs::CameraInfoPtr left_info_;
