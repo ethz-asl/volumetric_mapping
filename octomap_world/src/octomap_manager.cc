@@ -114,9 +114,9 @@ void OctomapManager::advertisePublishers() {
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
 
   if (map_publish_frequency_ > 0.0)
-    map_publish_timer_ = nh_private_.createTimer(ros::Duration(1.0/map_publish_frequency_),
-      &OctomapManager::publishAllEvent, this);
-
+    map_publish_timer_ =
+        nh_private_.createTimer(ros::Duration(1.0 / map_publish_frequency_),
+                                &OctomapManager::publishAllEvent, this);
 }
 
 void OctomapManager::publishAll() {
@@ -137,9 +137,7 @@ void OctomapManager::publishAll() {
   full_map_pub_.publish(full_map);
 }
 
-void OctomapManager::publishAllEvent(const ros::TimerEvent& e){
-  publishAll();
-}
+void OctomapManager::publishAllEvent(const ros::TimerEvent& e) { publishAll(); }
 
 bool OctomapManager::resetMapCallback(std_srvs::Empty::Request& request,
                                       std_srvs::Empty::Response& response) {
@@ -171,8 +169,9 @@ bool OctomapManager::saveOctomapCallback(
   return writeOctomapToFile(request.file_path);
 }
 
-bool OctomapManager::setBoxOccupancyCallback(volumetric_msgs::SetBoxOccupancy::Request& request,
-                           volumetric_msgs::SetBoxOccupancy::Response& response) {
+bool OctomapManager::setBoxOccupancyCallback(
+    volumetric_msgs::SetBoxOccupancy::Request& request,
+    volumetric_msgs::SetBoxOccupancy::Response& response) {
   Eigen::Vector3d bounding_box_center;
   Eigen::Vector3d bounding_box_size;
 

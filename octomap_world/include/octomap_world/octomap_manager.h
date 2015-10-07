@@ -47,8 +47,9 @@ class OctomapManager : public OctomapWorld {
   bool saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
                            volumetric_msgs::SaveMap::Response& response);
 
-  bool setBoxOccupancyCallback(volumetric_msgs::SetBoxOccupancy::Request& request,
-                           volumetric_msgs::SetBoxOccupancy::Response& response);
+  bool setBoxOccupancyCallback(
+      volumetric_msgs::SetBoxOccupancy::Request& request,
+      volumetric_msgs::SetBoxOccupancy::Response& response);
 
  private:
   // Sets up subscriptions based on ROS node parameters.
