@@ -2,6 +2,7 @@
 
 #include <glog/logging.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include <minkindr_conversions/kindr_msg.h>
 
 namespace volumetric_mapping {
 
@@ -170,7 +171,7 @@ bool OctomapManager::saveOctomapCallback(
   return writeOctomapToFile(request.file_path);
 }
 
-bool setBoxOccupancyCallback(volumetric_msgs::SetBoxOccupancy::Request& request,
+bool OctomapManager::setBoxOccupancyCallback(volumetric_msgs::SetBoxOccupancy::Request& request,
                            volumetric_msgs::SetBoxOccupancy::Response& response) {
   Eigen::Vector3d bounding_box_center;
   Eigen::Vector3d bounding_box_size;
