@@ -8,6 +8,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
 #include <pcl/conversions.h>
+#include <Eigen/StdVector>
 
 #include "volumetric_map_base/point_weighing.h"
 
@@ -62,9 +63,8 @@ class WorldBase {
   void insertPointcloud(
       const Transformation& T_G_sensor,
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor);
-  void insertPointcloud(
-      const Transformation& T_G_sensor,
-      const Eigen::Matrix3Xd& pointcloud_sensor);
+  void insertPointcloud(const Transformation& T_G_sensor,
+                        const Eigen::Matrix3Xd& pointcloud_sensor);
   void insertPointcloud(
       const Transformation& T_G_sensor,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor);
@@ -98,9 +98,23 @@ class WorldBase {
 
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-      pcl::PointCloud<pcl::PointXYZ>* output_cloud) {
+      pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
     // Blank world by default, so don't fill the pointcloud.
     return;
+  }
+
+  // Collision checking with a robot model.
+  virtual void setRobotSize(double diameter, double height) { return; }
+
+  virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
+    return false;
+  }
+  // Checks a path (assumed to be time-ordered) for collision.
+  // Sets the second input to the index at which the collision occurred.
+  virtual bool checkPathForCollisionsWithRobot(
+      const std::vector<Eigen::Vector3d>& robot_positions,
+      size_t* collision_index) {
+    return false;
   }
 
   virtual Eigen::Vector3d getMapCenter() const {
@@ -110,6 +124,17 @@ class WorldBase {
     return Eigen::Vector3d(std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max(),
                            std::numeric_limits<double>::max());
+  }
+  virtual void getMapBounds(Eigen::Vector3d* min_bound,
+                            Eigen::Vector3d* max_bound) const {
+    CHECK_NOTNULL(min_bound);
+    CHECK_NOTNULL(max_bound);
+    *min_bound = Eigen::Vector3d(std::numeric_limits<double>::min(),
+                                 std::numeric_limits<double>::min(),
+                                 std::numeric_limits<double>::min());
+    *max_bound = Eigen::Vector3d(std::numeric_limits<double>::max(),
+                                 std::numeric_limits<double>::max(),
+                                 std::numeric_limits<double>::max());
   }
 
   // Weighing class for points -> affect the weight of each point inserted

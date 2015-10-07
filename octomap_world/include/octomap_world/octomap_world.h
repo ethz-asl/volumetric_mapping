@@ -3,11 +3,12 @@
 
 #include <string>
 
+#include <fcl/collision_object.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
-#include <volumetric_map_base/world_base.h>
 #include <std_msgs/ColorRGBA.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <volumetric_map_base/world_base.h>
 
 namespace volumetric_mapping {
 
@@ -87,22 +88,35 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& point,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
-  virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point, double* probability) const;
+  virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point,
+                                             double* probability) const;
   virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
                                    const Eigen::Vector3d& end) const;
   virtual CellStatus getVisibility(const Eigen::Vector3d& view_point,
-                                  const Eigen::Vector3d& voxel_to_test,
-                                  bool stop_at_unknown_cell) const;
+                                   const Eigen::Vector3d& voxel_to_test,
+                                   bool stop_at_unknown_cell) const;
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-      pcl::PointCloud<pcl::PointXYZ>* output_cloud);
+      pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
 
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
   virtual Eigen::Vector3d getMapSize() const;
+  virtual void getMapBounds(Eigen::Vector3d* min_bound,
+                            Eigen::Vector3d* max_bound) const;
+
+  // Collision checking with robot model. Implemented with FCL.
+  // Cylinder model with given diameter and height.
+  virtual void setRobotSize(double diameter, double height);
+  virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position);
+  // Checks a path (assumed to be time-ordered) for collision.
+  // Sets the second input to the index at which the collision occurred.
+  virtual bool checkPathForCollisionsWithRobot(
+      const std::vector<Eigen::Vector3d>& robot_positions,
+      size_t* collision_index);
 
   // Serialization and deserialization from ROS messages.
   bool getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const;
@@ -150,11 +164,29 @@ class OctomapWorld : public WorldBase {
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
 
   double colorizeMapByHeight(double z, double min_z, double max_z) const;
+
+  // FCL methods.
+  void updateCollisionGeometry();
+  bool checkSinglePoseCollision(const Eigen::Vector3d& robot_position,
+                                const Eigen::Quaterniond& robot_orientation)
+      const;
+  static void poseToFcl(const Eigen::Vector3d& robot_position,
+                        const Eigen::Quaterniond& robot_orientation,
+                        fcl::Vec3f* trans, fcl::Quaternion3f* rot);
+
   std_msgs::ColorRGBA percentToColor(double h) const;
 
   std::shared_ptr<octomap::OcTree> octree_;
 
   OctomapParameters params_;
+
+  // Members for FCL robot collision checking
+  std::shared_ptr<fcl::CollisionGeometry> robot_geometry_;
+  // This caches the octomap geometry from collision requests. If the octomap
+  // is not updated between collision checks, this does not need to be
+  // regenerated.
+  std::shared_ptr<fcl::CollisionGeometry> octomap_geometry_cached_;
+  bool octomap_changed_since_collision_;
 };
 
 }  // namespace volumetric_mapping

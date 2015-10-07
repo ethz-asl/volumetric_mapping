@@ -3,9 +3,9 @@
 
 #include "octomap_world/octomap_world.h"
 
-#include <tf/transform_listener.h>
-#include <std_srvs/Empty.h>
 #include <octomap_msgs/GetOctomap.h>
+#include <std_srvs/Empty.h>
+#include <tf/transform_listener.h>
 #include <volumetric_msgs/LoadMap.h>
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>

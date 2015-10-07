@@ -1,11 +1,15 @@
 #include "octomap_world/octomap_world.h"
 
+#include <fcl/octree.h>
+#include <fcl/shape/geometric_shapes.h>
 #include <glog/logging.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl_ros/transforms.h>
+#include <fcl/collision.h>
+#include <fcl/collision_object.h>
 
 namespace volumetric_mapping {
 
@@ -21,7 +25,8 @@ Eigen::Vector3d pointOctomapToEigen(const octomap::point3d& point) {
 OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
-OctomapWorld::OctomapWorld(const OctomapParameters& params) {
+OctomapWorld::OctomapWorld(const OctomapParameters& params)
+    : octomap_changed_since_collision_(false) {
   setOctomapParameters(params);
 }
 
@@ -175,6 +180,8 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
     octree_->updateNode(*it, false);
   }
   octree_->updateInnerOccupancy();
+  // Make sure we clear the collision object cache.
+  octomap_changed_since_collision_ = true;
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
@@ -276,11 +283,11 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
   // This is actually a typedef for a vector of OcTreeKeys.
   octomap::KeyRay key_ray;
 
-  octree_->computeRayKeys(pointEigenToOctomap(view_point), pointEigenToOctomap(voxel_to_test),
-                          key_ray);
+  octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                          pointEigenToOctomap(voxel_to_test), key_ray);
 
   const octomap::OcTreeKey& voxel_to_test_key =
-                            octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
+      octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
 
   // Now check if there are any unknown or occupied nodes in the ray,
   // except for the voxel_to_test key.
@@ -313,30 +320,27 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   // Discretization step is smaller than the octomap resolution, as this way
   // no cell can possibly be missed
   double x_disc = bounding_box_size.x() /
-                  ceil ((bounding_box_size.x() + epsilon) / resolution);
+                  ceil((bounding_box_size.x() + epsilon) / resolution);
   double y_disc = bounding_box_size.y() /
-                  ceil ((bounding_box_size.y() + epsilon) / resolution);
+                  ceil((bounding_box_size.y() + epsilon) / resolution);
   double z_disc = bounding_box_size.z() /
-                  ceil ((bounding_box_size.z() + epsilon) / resolution);
+                  ceil((bounding_box_size.z() + epsilon) / resolution);
 
   // Ensure that resolution is not infinit
-  if (x_disc <= 0.0)
-    x_disc = 1.0;
-  if (y_disc <= 0.0)
-    y_disc = 1.0;
-  if (z_disc <= 0.0)
-    z_disc = 1.0;
+  if (x_disc <= 0.0) x_disc = 1.0;
+  if (y_disc <= 0.0) y_disc = 1.0;
+  if (z_disc <= 0.0) z_disc = 1.0;
 
-  const Eigen::Vector3d bounding_box_half_size = bounding_box_size  * 0.5;
+  const Eigen::Vector3d bounding_box_half_size = bounding_box_size * 0.5;
 
-  for (double x = -bounding_box_half_size.x();
-       x <= bounding_box_half_size.x(); x += x_disc) {
+  for (double x = -bounding_box_half_size.x(); x <= bounding_box_half_size.x();
+       x += x_disc) {
     for (double y = -bounding_box_half_size.y();
          y <= bounding_box_half_size.y(); y += y_disc) {
       for (double z = -bounding_box_half_size.z();
            z <= bounding_box_half_size.z(); z += z_disc) {
-        Eigen::Vector3d offset (x, y, z);
-        ret = getLineStatus (start + offset, end + offset);
+        Eigen::Vector3d offset(x, y, z);
+        ret = getLineStatus(start + offset, end + offset);
         if (ret != CellStatus::kFree) {
           return ret;
         }
@@ -362,7 +366,7 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
 
 void OctomapWorld::getOccupiedPointcloudInBoundingBox(
     const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-    pcl::PointCloud<pcl::PointXYZ>* output_cloud) {
+    pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
   CHECK_NOTNULL(output_cloud);
   output_cloud->clear();
 
@@ -372,12 +376,15 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
   epsilon_3d.setConstant(epsilon);
 
   // Determine correct center of voxel.
-  const Eigen::Vector3d center_corrected(resolution*std::floor(center.x()/resolution) +
-      resolution/2.0, resolution*std::floor(center.y()/resolution) + resolution/2.0,
-      resolution*std::floor(center.z()/resolution) + resolution/2.0);
+  const Eigen::Vector3d center_corrected(
+      resolution * std::floor(center.x() / resolution) + resolution / 2.0,
+      resolution * std::floor(center.y() / resolution) + resolution / 2.0,
+      resolution * std::floor(center.z() / resolution) + resolution / 2.0);
 
-  Eigen::Vector3d bbx_min = center_corrected - bounding_box_size / 2 - epsilon_3d;
-  Eigen::Vector3d bbx_max = center_corrected + bounding_box_size / 2 + epsilon_3d;
+  Eigen::Vector3d bbx_min =
+      center_corrected - bounding_box_size / 2 - epsilon_3d;
+  Eigen::Vector3d bbx_max =
+      center_corrected + bounding_box_size / 2 + epsilon_3d;
 
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
        x_position += resolution) {
@@ -391,7 +398,7 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
         octomap::OcTreeNode* node = octree_->search(key);
         if (node != NULL && octree_->isNodeOccupied(node)) {
           output_cloud->push_back(
-            pcl::PointXYZ(point.x(), point.y(), point.z()));
+              pcl::PointXYZ(point.x(), point.y(), point.z()));
         }
       }
     }
@@ -424,6 +431,8 @@ void OctomapWorld::setLogOddsBoundingBox(
   }
   // This is necessary since lazy_eval is set to true.
   octree_->updateInnerOccupancy();
+  // Make sure we clear the collision object cache.
+  octomap_changed_since_collision_ = true;
 }
 
 bool OctomapWorld::getOctomapBinaryMsg(octomap_msgs::Octomap* msg) const {
@@ -444,11 +453,15 @@ void OctomapWorld::setOctomapFromMsg(const octomap_msgs::Octomap& msg) {
 
 void OctomapWorld::setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg) {
   octree_.reset(octomap_msgs::binaryMsgToMap(msg));
+  // Make sure we clear the collision object cache.
+  octomap_changed_since_collision_ = true;
 }
 
 void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
   octree_.reset(
       dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(msg)));
+  // Make sure we clear the collision object cache.
+  octomap_changed_since_collision_ = true;
 }
 
 bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {
@@ -456,6 +469,8 @@ bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {
     // TODO(helenol): Resolution shouldn't matter... I think. I'm not sure.
     octree_.reset(new octomap::OcTree(0.05));
   }
+  // Make sure we clear the collision object cache.
+  octomap_changed_since_collision_ = true;
   return octree_->readBinary(filename);
 }
 
@@ -656,6 +671,97 @@ Eigen::Vector3d OctomapWorld::getMapSize() const {
   octree_->getMetricMax(max_x, max_y, max_z);
 
   return Eigen::Vector3d(max_x - min_x, max_y - min_y, max_z - min_z);
+}
+
+void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
+                                Eigen::Vector3d* max_bound) const {
+  CHECK_NOTNULL(min_bound);
+  CHECK_NOTNULL(max_bound);
+  // Metric min and max z of the map:
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+  octree_->getMetricMin(min_x, min_y, min_z);
+  octree_->getMetricMax(max_x, max_y, max_z);
+
+  *min_bound = Eigen::Vector3d(min_x, min_y, min_z);
+  *max_bound = Eigen::Vector3d(max_x, max_y, max_z);
+}
+
+void OctomapWorld::setRobotSize(double diameter, double height) {
+  robot_geometry_.reset(new fcl::Cylinder(diameter / 2.0, height));
+}
+
+bool OctomapWorld::checkCollisionWithRobot(
+    const Eigen::Vector3d& robot_position) {
+  updateCollisionGeometry();
+  return checkSinglePoseCollision(robot_position,
+                                  Eigen::Quaterniond::Identity());
+}
+
+bool OctomapWorld::checkPathForCollisionsWithRobot(
+    const std::vector<Eigen::Vector3d>& robot_positions,
+    size_t* collision_index) {
+  updateCollisionGeometry();
+
+  Eigen::Quaterniond q_identity = Eigen::Quaterniond::Identity();
+
+  // Iterate over vector of poses.
+  // Check each one.
+  // Return when a collision is found, and return the index of the earliest
+  // collision.
+  for (size_t i = 0; i < robot_positions.size(); ++i) {
+    if (checkSinglePoseCollision(robot_positions[i], q_identity)) {
+      if (collision_index != nullptr) {
+        *collision_index = i;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+void OctomapWorld::updateCollisionGeometry() {
+  // Only updates the collision geometry if necessary.
+  if (octomap_changed_since_collision_) {
+    // Unfortunately, this method requires a boost shared pointer.
+    boost::shared_ptr<octomap::OcTree> boost_tree_copy(
+        new octomap::OcTree(*octree_));
+    octomap_geometry_cached_.reset(new fcl::OcTree(boost_tree_copy));
+    octomap_changed_since_collision_ = false;
+  }
+}
+
+bool OctomapWorld::checkSinglePoseCollision(
+    const Eigen::Vector3d& robot_position,
+    const Eigen::Quaterniond& robot_orientation) const {
+  if (robot_geometry_ == nullptr || octomap_geometry_cached_ == nullptr) {
+    LOG(WARNING) << "Trying to check collisions without robot geometry set up!";
+    return true;
+  }
+
+  fcl::Quaternion3f rot;
+  fcl::Vec3f pos;
+  fcl::Transform3f transform;
+
+  poseToFcl(robot_position, robot_orientation, &pos, &rot);
+  transform.setTransform(rot, pos);
+
+  fcl::CollisionRequest collision_request;
+  fcl::CollisionResult collision_result;
+  bool collision =
+      fcl::collide(robot_geometry_.get(), transform,
+                   octomap_geometry_cached_.get(), fcl::Transform3f(),
+                   collision_request, collision_result) > 0;
+  return collision;
+}
+
+void OctomapWorld::poseToFcl(const Eigen::Vector3d& robot_position,
+                             const Eigen::Quaterniond& robot_orientation,
+                             fcl::Vec3f* trans, fcl::Quaternion3f* rot) {
+  trans->setValue(robot_position.x(), robot_position.y(), robot_position.z());
+  rot->getW() = robot_orientation.w();
+  rot->getX() = robot_orientation.x();
+  rot->getY() = robot_orientation.y();
+  rot->getZ() = robot_orientation.z();
 }
 
 }  // namespace volumetric_mapping
