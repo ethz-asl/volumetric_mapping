@@ -11,7 +11,7 @@ A repository for 3D volumetric (occupancy) maps, providing a generic interface f
 ## Dependencies
 In addition to `ros-indigo-desktop-full`, please install:
 ```
-sudo apt-get install ros-indigo-octomap-mapping
+sudo apt-get install ros-indigo-octomap-mapping ros-indigo-fcl
 ```
 
 ## Libraries
