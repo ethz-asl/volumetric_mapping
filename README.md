@@ -14,6 +14,8 @@ In addition to `ros-indigo-desktop-full`, please install:
 sudo apt-get install ros-indigo-octomap-mapping ros-indigo-fcl
 ```
 
+On Mac OS X, see the [mav_tools Wiki instructions](https://github.com/ethz-asl/mav_tools/wiki/Install-the-ASL-MAV-framework#install-extra-stock-ros-packages-octomap-ompl-etc).
+
 ## Libraries
 **[OctomapWorld](https://github.com/ethz-asl/volumetric_mapping/blob/master/octomap_world/include/octomap_world/octomap_world.h)** - general library for handling insertion of pointclouds, can be run outside of a ROS node, and takes parameters as a struct.
 
