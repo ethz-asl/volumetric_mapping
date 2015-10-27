@@ -22,11 +22,7 @@ class WorldBase {
  public:
   typedef std::shared_ptr<WorldBase> Ptr;
 
-  enum CellStatus {
-    kFree = 0,
-    kOccupied = 1,
-    kUnknown = 2
-  };
+  enum CellStatus { kFree = 0, kOccupied = 1, kUnknown = 2 };
 
   WorldBase() {}
   virtual ~WorldBase() {}
@@ -54,9 +50,9 @@ class WorldBase {
                                  const Eigen::Matrix3d& left_cam_matrix,
                                  const Eigen::Matrix3d& right_cam_matrix,
                                  const Eigen::Vector2d& full_image_size) const;
-  Eigen::Matrix4d getQForROSCameras(const sensor_msgs::CameraInfo& left_camera,
-                                    const sensor_msgs::CameraInfo& right_camera)
-      const;
+  Eigen::Matrix4d getQForROSCameras(
+      const sensor_msgs::CameraInfo& left_camera,
+      const sensor_msgs::CameraInfo& right_camera) const;
 
   // Calls insertPointcloudImpl() or insertPointcloudIntoMapWithWeightsImpl(),
   // depending if points are to be weighted.
@@ -104,7 +100,10 @@ class WorldBase {
   }
 
   // Collision checking with a robot model.
-  virtual void setRobotSize(double x, double y, double z) { return; }
+  virtual void setRobotSize(double x, double y, double z) {
+    setRobotSize(Eigen::Vector3d(x, y, z));
+  }
+  virtual void setRobotSize(const Eigen::Vector3d& robot_size) { return; }
 
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
     return false;

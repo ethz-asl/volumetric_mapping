@@ -670,8 +670,8 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
   *max_bound = Eigen::Vector3d(max_x, max_y, max_z);
 }
 
-void OctomapWorld::setRobotSize(double x, double y, double z) {
-  robot_size_ = Eigen::Vector3d(x, y, z);
+void OctomapWorld::setRobotSize(const Eigen::Vector3d& robot_size) {
+  robot_size_ = robot_size;
 }
 
 bool OctomapWorld::checkCollisionWithRobot(

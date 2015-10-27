@@ -109,7 +109,7 @@ class OctomapWorld : public WorldBase {
 
   // Collision checking with robot model. Implemented as a box with our own
   // implementation.
-  virtual void setRobotSize(double x, double y, double z);
+  virtual void setRobotSize(const Eigen::Vector3d& robot_size);
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position);
   // Checks a path (assumed to be time-ordered) for collision.
   // Sets the second input to the index at which the collision occurred.
