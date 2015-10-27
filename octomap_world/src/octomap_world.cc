@@ -21,7 +21,8 @@ Eigen::Vector3d pointOctomapToEigen(const octomap::point3d& point) {
 OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
-OctomapWorld::OctomapWorld(const OctomapParameters& params) {
+OctomapWorld::OctomapWorld(const OctomapParameters& params)
+  : robot_size_(Eigen::Vector3d::Zero()) {
   setOctomapParameters(params);
 }
 
