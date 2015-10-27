@@ -104,7 +104,7 @@ class WorldBase {
   }
 
   // Collision checking with a robot model.
-  virtual void setRobotSize(double diameter, double height) { return; }
+  virtual void setRobotSize(double x, double y, double z) { return; }
 
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
     return false;

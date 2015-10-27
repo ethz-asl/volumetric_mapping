@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include <fcl/collision_object.h>
-#include <fcl/octree.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
 #include <std_msgs/ColorRGBA.h>
@@ -109,9 +107,9 @@ class OctomapWorld : public WorldBase {
   virtual void getMapBounds(Eigen::Vector3d* min_bound,
                             Eigen::Vector3d* max_bound) const;
 
-  // Collision checking with robot model. Implemented with FCL.
-  // Cylinder model with given diameter and height.
-  virtual void setRobotSize(double diameter, double height);
+  // Collision checking with robot model. Implemented as a box with our own
+  // implementation.
+  virtual void setRobotSize(double x, double y, double z);
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position);
   // Checks a path (assumed to be time-ordered) for collision.
   // Sets the second input to the index at which the collision occurred.
@@ -166,14 +164,8 @@ class OctomapWorld : public WorldBase {
 
   double colorizeMapByHeight(double z, double min_z, double max_z) const;
 
-  // FCL methods.
-  void updateCollisionGeometry();
-  bool checkSinglePoseCollision(const Eigen::Vector3d& robot_position,
-                                const Eigen::Quaterniond& robot_orientation)
-      const;
-  static void poseToFcl(const Eigen::Vector3d& robot_position,
-                        const Eigen::Quaterniond& robot_orientation,
-                        fcl::Vec3f* trans, fcl::Quaternion3f* rot);
+  // Collision checking methods.
+  bool checkSinglePoseCollision(const Eigen::Vector3d& robot_position) const;
 
   std_msgs::ColorRGBA percentToColor(double h) const;
 
@@ -181,15 +173,8 @@ class OctomapWorld : public WorldBase {
 
   OctomapParameters params_;
 
-  // Members for FCL robot collision checking
-  bool use_fcl_;
-  std::shared_ptr<fcl::CollisionGeometry> robot_geometry_;
+  // For collision checking.
   Eigen::Vector3d robot_size_;
-  // This caches the octomap geometry from collision requests. If the octomap
-  // is not updated between collision checks, this does not need to be
-  // regenerated.
-  std::shared_ptr<fcl::OcTree> octomap_geometry_cached_;
-  bool octomap_changed_since_collision_;
 };
 
 }  // namespace volumetric_mapping

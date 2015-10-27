@@ -14,7 +14,6 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
-  <depend>fcl</depend>
   <depend>minkindr_conversions</depend>
   <depend>octomap</depend>
   <depend>octomap_msgs</depend>
