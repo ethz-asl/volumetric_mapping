@@ -26,7 +26,7 @@ OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
 OctomapWorld::OctomapWorld(const OctomapParameters& params)
-    : octomap_changed_since_collision_(false) {
+    : octomap_changed_since_collision_(false), use_fcl_(false) {
   setOctomapParameters(params);
 }
 
@@ -125,7 +125,6 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
 
   if (params_.sensor_max_range < 0.0 ||
       (point - sensor_origin).norm() <= params_.sensor_max_range) {
-
     // Cast a ray to compute all the free cells.
     octomap::KeyRay key_ray;
     if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
@@ -687,7 +686,8 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
 }
 
 void OctomapWorld::setRobotSize(double diameter, double height) {
-  robot_geometry_.reset(new fcl::Cylinder(diameter / 2.0, height));
+  robot_size_ = Eigen::Vector3d(diameter, diameter, height);
+  robot_geometry_.reset(new fcl::Box(diameter, diameter, height));
 }
 
 bool OctomapWorld::checkCollisionWithRobot(
@@ -720,6 +720,9 @@ bool OctomapWorld::checkPathForCollisionsWithRobot(
 }
 
 void OctomapWorld::updateCollisionGeometry() {
+  if (!use_fcl_) {
+    return;
+  }
   // Only updates the collision geometry if necessary.
   if (octomap_changed_since_collision_) {
     // Unfortunately, this method requires a boost shared pointer.
@@ -727,12 +730,25 @@ void OctomapWorld::updateCollisionGeometry() {
         new octomap::OcTree(*octree_));
     octomap_geometry_cached_.reset(new fcl::OcTree(boost_tree_copy));
     octomap_changed_since_collision_ = false;
+
+    /* octomap_geometry_cached_->setCellDefaultOccupancy(0.5);
+    octomap_geometry_cached_->setOccupancyThres(0);
+    octomap_geometry_cached_->setFreeThres(0.65);
+
+    std::cout << "[OCTOMAP] Occupancy threshold: "
+      << octomap_geometry_cached_->getOccupancyThres()
+      << std::endl; */
   }
 }
 
 bool OctomapWorld::checkSinglePoseCollision(
     const Eigen::Vector3d& robot_position,
     const Eigen::Quaterniond& robot_orientation) const {
+  if (!use_fcl_) {
+    return (CellStatus::kFree !=
+            getCellStatusBoundingBox(robot_position, robot_size_));
+  }
+
   if (robot_geometry_ == nullptr || octomap_geometry_cached_ == nullptr) {
     LOG(WARNING) << "Trying to check collisions without robot geometry set up!";
     return true;
@@ -747,6 +763,7 @@ bool OctomapWorld::checkSinglePoseCollision(
 
   fcl::CollisionRequest collision_request;
   fcl::CollisionResult collision_result;
+  collision_request.enable_cost = true;
   bool collision =
       fcl::collide(robot_geometry_.get(), transform,
                    octomap_geometry_cached_.get(), fcl::Transform3f(),

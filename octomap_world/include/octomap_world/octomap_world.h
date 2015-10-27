@@ -4,6 +4,7 @@
 #include <string>
 
 #include <fcl/collision_object.h>
+#include <fcl/octree.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
 #include <std_msgs/ColorRGBA.h>
@@ -181,11 +182,13 @@ class OctomapWorld : public WorldBase {
   OctomapParameters params_;
 
   // Members for FCL robot collision checking
+  bool use_fcl_;
   std::shared_ptr<fcl::CollisionGeometry> robot_geometry_;
+  Eigen::Vector3d robot_size_;
   // This caches the octomap geometry from collision requests. If the octomap
   // is not updated between collision checks, this does not need to be
   // regenerated.
-  std::shared_ptr<fcl::CollisionGeometry> octomap_geometry_cached_;
+  std::shared_ptr<fcl::OcTree> octomap_geometry_cached_;
   bool octomap_changed_since_collision_;
 };
 
