@@ -105,7 +105,7 @@ class WorldBase {
   }
   virtual void setRobotSize(const Eigen::Vector3d& robot_size) { return; }
   virtual Eigen::Vector3d getRobotSize() const {
-    return Eigen::Vector3d::Identity();
+    return Eigen::Vector3d::Zero();
   }
 
   virtual bool checkCollisionWithRobot(const Eigen::Vector3d& robot_position) {
