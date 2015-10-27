@@ -674,6 +674,11 @@ void OctomapWorld::setRobotSize(const Eigen::Vector3d& robot_size) {
   robot_size_ = robot_size;
 }
 
+Eigen::Vector3d OctomapWorld::getRobotSize() const {
+  return robot_size_;
+}
+
+
 bool OctomapWorld::checkCollisionWithRobot(
     const Eigen::Vector3d& robot_position) {
   return checkSinglePoseCollision(robot_position);
