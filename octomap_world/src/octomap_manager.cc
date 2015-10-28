@@ -19,6 +19,19 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
   subscribe();
   advertiseServices();
   advertisePublishers();
+
+  // After creating the manager, if the octomap_file parameter is set,
+  // load the octomap at that path and publish it.
+  std::string octomap_file;
+  if (nh_private_.getParam("octomap_file", octomap_file)) {
+    if (loadOctomapFromFile(octomap_file)) {
+      ROS_INFO_STREAM(
+          "Successfully loaded octomap from path: " << octomap_file);
+      publishAll();
+    } else {
+      ROS_ERROR_STREAM("Could not load octomap from path: " << octomap_file);
+    }
+  }
 }
 
 void OctomapManager::setParametersFromROS() {
@@ -253,8 +266,7 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   try {
     tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
                                  tf_transform);
-  }
-  catch (tf::TransformException& ex) {
+  } catch (tf::TransformException& ex) {
     ROS_ERROR_STREAM(
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
