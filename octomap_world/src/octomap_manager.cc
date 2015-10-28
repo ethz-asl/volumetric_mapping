@@ -19,6 +19,19 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
   subscribe();
   advertiseServices();
   advertisePublishers();
+
+  // After creating the manager, if the octomap_file parameter is set,
+  // load the octomap at that path and publish it.
+  std::string octomap_file;
+  if (nh_private_.getParam("octomap_file", octomap_file)) {
+    if (loadOctomapFromFile(octomap_file)) {
+      ROS_INFO_STREAM(
+          "Successfully loaded octomap from path: " << octomap_file);
+      publishAll();
+    } else {
+      ROS_ERROR_STREAM("Could not load octomap from path: " << octomap_file);
+    }
+  }
 }
 
 void OctomapManager::setParametersFromROS() {
@@ -58,19 +71,6 @@ void OctomapManager::setParametersFromROS() {
 
   // Set the parent class parameters.
   setOctomapParameters(params);
-
-  // After creating the manager, if the octomap_file parameter is set,
-  // load the octomap at that path and publish it.
-  std::string octomap_file;
-  if (nh_private_.getParam("octomap_file", octomap_file)) {
-    if (loadOctomapFromFile(octomap_file)) {
-      ROS_INFO_STREAM(
-          "Successfully loaded octomap from path: " << octomap_file);
-      publishAll();
-    } else {
-      ROS_ERROR_STREAM("Could not load octomap from path: " << octomap_file);
-    }
-  }
 }
 
 bool OctomapManager::setQFromParams(std::vector<double>* Q_vec) {
