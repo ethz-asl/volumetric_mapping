@@ -98,7 +98,7 @@ void OctomapManager::advertiseServices() {
       "save_map", &OctomapManager::saveOctomapCallback, this);
   load_octree_service_ = nh_private_.advertiseService(
       "load_map", &OctomapManager::loadOctomapCallback, this);
-  load_octree_service_ = nh_private_.advertiseService(
+  set_box_occupancy_service_ = nh_private_.advertiseService(
       "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
 }
 
