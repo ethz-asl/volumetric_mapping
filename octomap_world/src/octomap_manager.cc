@@ -266,8 +266,7 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   try {
     tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
                                  tf_transform);
-  }
-  catch (tf::TransformException& ex) {
+  } catch (tf::TransformException& ex) {
     ROS_ERROR_STREAM(
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
