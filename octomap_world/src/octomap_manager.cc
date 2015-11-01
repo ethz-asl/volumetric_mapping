@@ -197,6 +197,7 @@ bool OctomapManager::setBoxOccupancyCallback(
   } else {
     setFree(bounding_box_center, bounding_box_size);
   }
+  publishAll();
 }
 
 void OctomapManager::leftCameraInfoCallback(
