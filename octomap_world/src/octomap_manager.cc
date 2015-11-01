@@ -181,10 +181,10 @@ bool OctomapManager::setBoxOccupancyCallback(
 
   if (set_occupied) {
     setOccupied(bounding_box_center, bounding_box_size);
-    publishAll();
   } else {
     setFree(bounding_box_center, bounding_box_size);
   }
+  publishAll();
 }
 
 void OctomapManager::leftCameraInfoCallback(
