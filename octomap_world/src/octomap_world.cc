@@ -702,8 +702,13 @@ bool OctomapWorld::checkPathForCollisionsWithRobot(
 
 bool OctomapWorld::checkSinglePoseCollision(
     const Eigen::Vector3d& robot_position) const {
-  return (CellStatus::kFree !=
+  if (params_.treat_unknown_as_occupied) {
+    return (CellStatus::kFree !=
           getCellStatusBoundingBox(robot_position, robot_size_));
+  } else {
+    return (CellStatus::kOccupied ==
+          getCellStatusBoundingBox(robot_position, robot_size_));
+  }
 }
 
 }  // namespace volumetric_mapping
