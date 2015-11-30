@@ -23,9 +23,8 @@ struct OctomapParameters {
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
-        treat_unknown_as_occupied(false) {
+        treat_unknown_as_occupied(true) {
     // Set reasonable defaults here...
-    // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
 
   // Resolution for the Octree. It is not possible to change this without
