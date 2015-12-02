@@ -22,9 +22,9 @@ struct OctomapParameters {
         filter_speckles(true),
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
-        visualize_max_z(std::numeric_limits<double>::max()) {
+        visualize_max_z(std::numeric_limits<double>::max()),
+        treat_unknown_as_occupied(true) {
     // Set reasonable defaults here...
-    // TODO(helenol): use params from OctomapProvider defaults or Sammy configs?
   }
 
   // Resolution for the Octree. It is not possible to change this without
@@ -51,6 +51,9 @@ struct OctomapParameters {
   // octomap, visualization.
   double visualize_min_z;
   double visualize_max_z;
+
+  // Collision checking.
+  double treat_unknown_as_occupied;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
