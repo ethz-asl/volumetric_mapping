@@ -12,7 +12,7 @@
   <depend>octomap_world</depend>
   <depend>volumetric_map_base</depend>
   <depend>volumetric_msgs</depend>
-  <depend>planner_rrtstar</depend>
+  <depend>minkindr</depend>
 
   <export>
     <metapackage/>
