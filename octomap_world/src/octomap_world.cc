@@ -96,7 +96,7 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
   sensor_origin_eigen = sensor_to_world * sensor_origin_eigen;
   octomap::point3d sensor_origin = pointEigenToOctomap(sensor_origin_eigen);
 
-  octomap::KeySet free_cells, occupied_cells, checked_cells;
+  octomap::KeySet free_cells, occupied_cells;
   for (int v = 0; v < projected_points.rows; ++v) {
     const cv::Vec3f* row_pointer = projected_points.ptr<cv::Vec3f>(v);
 
@@ -109,9 +109,15 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
                                   row_pointer[u][2]);
 
       point_eigen = sensor_to_world * point_eigen;
+      octomap::point3d point_octomap = pointEigenToOctomap(point_eigen);
 
-      castRay(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
-              &occupied_cells);
+      // First, check if we've already checked this.
+      octomap::OcTreeKey key = octree_->coordToKey(point_octomap);
+
+      if (occupied_cells.find(key) == occupied_cells.end()) {
+        // Check if this is within the allowed sensor range.
+        castRay(sensor_origin, point_octomap, &free_cells, &occupied_cells);
+      }
     }
   }
   updateOccupancy(&free_cells, &occupied_cells);
