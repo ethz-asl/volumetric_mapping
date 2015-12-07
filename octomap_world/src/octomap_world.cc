@@ -76,8 +76,13 @@ void OctomapWorld::insertPointcloudIntoMapImpl(
   for (pcl::PointCloud<pcl::PointXYZ>::const_iterator it = cloud->begin();
        it != cloud->end(); ++it) {
     const octomap::point3d p_G_point(it->x, it->y, it->z);
-    // Check if this is within the allowed sensor range.
-    castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
+    // First, check if we've already checked this.
+    octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
+
+    if (occupied_cells.find(key) == occupied_cells.end()) {
+      // Check if this is within the allowed sensor range.
+      castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
+    }
   }
 
   // Apply the new free cells and occupied cells from
@@ -104,9 +109,15 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
                                   row_pointer[u][2]);
 
       point_eigen = sensor_to_world * point_eigen;
+      octomap::point3d point_octomap = pointEigenToOctomap(point_eigen);
 
-      castRay(sensor_origin, pointEigenToOctomap(point_eigen), &free_cells,
-              &occupied_cells);
+      // First, check if we've already checked this.
+      octomap::OcTreeKey key = octree_->coordToKey(point_octomap);
+
+      if (occupied_cells.find(key) == occupied_cells.end()) {
+        // Check if this is within the allowed sensor range.
+        castRay(sensor_origin, point_octomap, &free_cells, &occupied_cells);
+      }
     }
   }
   updateOccupancy(&free_cells, &occupied_cells);
