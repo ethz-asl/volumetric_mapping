@@ -1,5 +1,5 @@
-#ifndef VOLUMETRIC_MAP_BASE_WEIGHING_FUNCTION_H_
-#define VOLUMETRIC_MAP_BASE_WEIGHING_FUNCTION_H_
+#ifndef VOLUMETRIC_MAP_BASE_POINT_WEIGHING_H_
+#define VOLUMETRIC_MAP_BASE_POINT_WEIGHING_H_
 
 #include <vector>
 
@@ -11,8 +11,8 @@ namespace volumetric_mapping {
 // value for the measurement.
 // For example, default behavior would happen with a value of 1.0 for all points
 // (and this is the base class implementation).
-// In the case of raycasting-built maps, such as octomap, all occupied
-// probabilities in the ray of the point will be scaled by this amount.
+// In the case of raycasting-built maps, such as octomap, the weight is
+// related to the standard deviation of the sensor measurement noise.
 class PointWeighing {
  public:
   PointWeighing() {}
@@ -29,4 +29,4 @@ class PointWeighing {
 
 }  // namespace volumetric_mapping
 
-#endif  // VOLUMETRIC_MAP_BASE_WEIGHING_FUNCTION_H_
+#endif  // VOLUMETRIC_MAP_BASE_POINT_WEIGHING_H_

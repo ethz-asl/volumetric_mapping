@@ -146,7 +146,19 @@ class OctomapWorld : public WorldBase {
       const Transformation& T_G_sensor,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud);
 
+  // The same functions but with weighing as well:
+  virtual void insertProjectedDisparityIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world, const cv::Mat& projected_points,
+      const cv::Mat& weights);
+  virtual void insertPointcloudIntoMapWithWeightsImpl(
+      const Transformation& sensor_to_world,
+      const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud,
+      const std::vector<double>& weights);
+
  private:
+  typedef std::tr1::unordered_map<octomap::OcTreeKey, double,
+                                  octomap::OcTreeKey::KeyHash> KeyToWeightsMap;
+
   // Check if the node at the specified key has neighbors or not.
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
 
@@ -162,6 +174,16 @@ class OctomapWorld : public WorldBase {
   void updateOccupancy(octomap::KeySet* free_cells,
                        octomap::KeySet* occupied_cells);
   bool isValidPoint(const cv::Vec3f& point) const;
+
+  void insertIntoWeightsMapIfHigher(
+      const octomap::OcTreeKey& key, double weight,
+      KeyToWeightsMap* occupied_cell_weights) const;
+  void castRayWithWeights(const octomap::point3d& sensor_origin,
+                          const octomap::point3d& point, double weight,
+                          octomap::KeySet* free_cells,
+                          KeyToWeightsMap* occupied_cell_weights) const;
+  void updateOccupancyWithWeights(const KeyToWeightsMap& occupied_cell_weights,
+                                  octomap::KeySet* free_cells);
 
   void setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg);
   void setOctomapFromFullMsg(const octomap_msgs::Octomap& msg);
