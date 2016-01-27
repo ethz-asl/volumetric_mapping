@@ -11,8 +11,15 @@ A repository for 3D volumetric (occupancy) maps, providing a generic interface f
 ## Dependencies
 In addition to `ros-indigo-desktop-full`, please install:
 ```
-sudo apt-get install ros-indigo-octomap-mapping ros-indigo-fcl
+sudo apt-get install ros-indigo-octomap-mapping
 ```
+
+And the following packages:
+[minkindr](https://github.com/ethz-asl/minkindr)
+[minkindr_ros](https://github.com/ethz-asl/minkindr_ros)
+[eigen_catkin](https://github.com/ethz-asl/eigen_catkin)
+[glog_catkin](https://github.com/ethz-asl/glog_catkin)
+[gflags_catkin](https://github.com/ethz-asl/gflags_catkin)
 
 On Mac OS X, see the [mav_tools Wiki instructions](https://github.com/ethz-asl/mav_tools/wiki/Install-the-ASL-MAV-framework#install-extra-stock-ros-packages-octomap-ompl-etc).
 
