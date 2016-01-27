@@ -3,8 +3,12 @@
   <name>volumetric_msgs</name>
   <version>0.0.0</version>
   <description>Messages and services for volumetric mapping.</description>
-  <maintainer email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</maintainer>
-  <maintainer email="helenoleynikova@gmail.com">Helen Oleynikova</maintainer>
+
+  <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
+  <author email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</author>
+
+  <maintainer email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</maintainer>
+
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>

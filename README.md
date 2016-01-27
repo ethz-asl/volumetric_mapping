@@ -11,8 +11,15 @@ A repository for 3D volumetric (occupancy) maps, providing a generic interface f
 ## Dependencies
 In addition to `ros-indigo-desktop-full`, please install:
 ```
-sudo apt-get install ros-indigo-octomap-mapping ros-indigo-fcl
+sudo apt-get install ros-indigo-octomap-mapping
 ```
+
+And the following packages:
+[minkindr](https://github.com/ethz-asl/minkindr)
+[minkindr_ros](https://github.com/ethz-asl/minkindr_ros)
+[eigen_catkin](https://github.com/ethz-asl/eigen_catkin)
+[glog_catkin](https://github.com/ethz-asl/glog_catkin)
+[gflags_catkin](https://github.com/ethz-asl/gflags_catkin)
 
 On Mac OS X, see the [mav_tools Wiki instructions](https://github.com/ethz-asl/mav_tools/wiki/Install-the-ASL-MAV-framework#install-extra-stock-ros-packages-octomap-ompl-etc).
 
@@ -29,7 +36,8 @@ Listens to disparity and pointcloud messages and adds them to an octomap.
 * `tf_frame` (string, default: "/world") - tf frame name to use for the world.
 * `resolution` (double, default: 0.15) - resolution each grid cell in meters.
 * `Q` (vector of doubles (representing 4x4 matrix, row-major)) - Q projection matrix for disparity projection, in case camera info topics are not available.
-* `map_publish_frequency` (double, default 0.0) - Frequency at which the Octomap is published for visualization purposes. If set to < 0.0, the Octomap is not regularly published (use service call instead). 
+* `map_publish_frequency` (double, default: 0.0) - Frequency at which the Octomap is published for visualization purposes. If set to < 0.0, the Octomap is not regularly published (use service call instead).
+* `octomap_file` (string, default: "") - Loads an octomap from this path on startup. Use `load_map` service below to load a map from file after startup.
 
 For other parameters, see [octomap_world.h](https://github.com/ethz-asl/volumetric_mapping/blob/master/octomap_world/include/octomap_world/octomap_world.h#L16-L24).
 

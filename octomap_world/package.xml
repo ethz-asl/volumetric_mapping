@@ -6,8 +6,11 @@
       A wrapper for Octomap, allowing insertions of pointclouds and disparity maps.
       Inherits from WorldBase in volumetric_map_base package.
   </description>
-  <maintainer email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</maintainer>
-  <maintainer email="helenoleynikova@gmail.com">Helen Oleynikova</maintainer>
+
+  <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
+  <author email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</author>
+
+  <maintainer email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</maintainer>
 
   <license>BSD</license>
 

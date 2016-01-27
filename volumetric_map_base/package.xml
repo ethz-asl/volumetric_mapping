@@ -3,8 +3,11 @@
   <name>volumetric_map_base</name>
   <version>0.0.0</version>
   <description>Base class for volumentric map representations for planning.</description>
-  <maintainer email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</maintainer>
-  <maintainer email="helenoleynikova@gmail.com">Helen Oleynikova</maintainer>
+
+  <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
+  <author email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</author>
+
+  <maintainer email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</maintainer>
 
   <license>BSD</license>
 
