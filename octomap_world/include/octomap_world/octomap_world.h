@@ -52,7 +52,8 @@ struct OctomapParameters {
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
-        treat_unknown_as_occupied(true) {
+        treat_unknown_as_occupied(true),
+        change_detection(false) {
     // Set reasonable defaults here...
   }
 
@@ -83,6 +84,9 @@ struct OctomapParameters {
 
   // Collision checking.
   double treat_unknown_as_occupied;
+
+  // Whether to track changes -- must be set to true to use getChangedPoints().
+  bool change_detection;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
@@ -164,6 +168,16 @@ class OctomapWorld : public WorldBase {
   void generateMarkerArray(const std::string& tf_frame,
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
+
+  // Change detection -- when this is called, this resets the change detection
+  // tracking within the map. So 2 consecutive calls will produce first the
+  // change set, then nothing.
+  // If not NULL, changed_states contains the new state of the node -- 1 is
+  // occupied, 0 is free.
+  // IMPORTANT NOTE: change_detection MUST be set to true in the parameters in
+  // order for this to work!
+  void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
+  std::vector<bool>* changed_states);
 
  protected:
   // Actual implementation for inserting disparity data.

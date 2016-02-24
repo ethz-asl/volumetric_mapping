@@ -51,7 +51,7 @@ OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
 OctomapWorld::OctomapWorld(const OctomapParameters& params)
-  : robot_size_(Eigen::Vector3d::Zero()) {
+    : robot_size_(Eigen::Vector3d::Zero()) {
   setOctomapParameters(params);
 }
 
@@ -79,6 +79,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   octree_->setClampingThresMin(params.threshold_min);
   octree_->setClampingThresMax(params.threshold_max);
   octree_->setOccupancyThres(params.threshold_occupancy);
+  octree_->enableChangeDetection(params.change_detection);
 
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
@@ -224,6 +225,12 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   CellStatus center_status = getCellStatusPoint(point);
   if (center_status != CellStatus::kFree) {
     return center_status;
+  }
+
+  // Also if center is outside of the bounds.
+  octomap::OcTreeKey key;
+  if (!octree_->coordToKeyChecked(pointEigenToOctomap(point), key)) {
+    return CellStatus::kUnknown;
   }
 
   // Now we have to iterate over everything in the bounding box.
@@ -744,11 +751,38 @@ bool OctomapWorld::checkSinglePoseCollision(
     const Eigen::Vector3d& robot_position) const {
   if (params_.treat_unknown_as_occupied) {
     return (CellStatus::kFree !=
-          getCellStatusBoundingBox(robot_position, robot_size_));
+            getCellStatusBoundingBox(robot_position, robot_size_));
   } else {
     return (CellStatus::kOccupied ==
-          getCellStatusBoundingBox(robot_position, robot_size_));
+            getCellStatusBoundingBox(robot_position, robot_size_));
   }
+}
+
+void OctomapWorld::getChangedPoints(
+    std::vector<Eigen::Vector3d>* changed_points,
+    std::vector<bool>* changed_states) {
+  CHECK_NOTNULL(changed_points);
+  octomap::KeyBoolMap::const_iterator start_key = octree_->changedKeysBegin();
+  octomap::KeyBoolMap::const_iterator end_key = octree_->changedKeysEnd();
+
+  changed_points->clear();
+  if (changed_states != NULL) {
+    changed_states->clear();
+  }
+
+  for (octomap::KeyBoolMap::const_iterator iter = start_key; iter != end_key;
+       ++iter) {
+    octomap::OcTreeNode* node = octree_->search(iter->first);
+    bool occupied = octree_->isNodeOccupied(node);
+    Eigen::Vector3d center =
+        pointOctomapToEigen(octree_->keyToCoord(iter->first));
+
+    changed_points->push_back(center);
+    if (changed_states != NULL) {
+      changed_states->push_back(occupied);
+    }
+  }
+  octree_->resetChangeDetection();
 }
 
 }  // namespace volumetric_mapping
