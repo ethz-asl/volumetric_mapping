@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/LoadMap.h>
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
+#include <volumetric_msgs/SetDisplayBounds.h>
 
 namespace volumetric_mapping {
 
@@ -79,6 +80,9 @@ class OctomapManager : public OctomapWorld {
   bool setBoxOccupancyCallback(
       volumetric_msgs::SetBoxOccupancy::Request& request,
       volumetric_msgs::SetBoxOccupancy::Response& response);
+  bool setDisplayBoundsCallback(
+      volumetric_msgs::SetDisplayBounds::Request& request,
+      volumetric_msgs::SetDisplayBounds::Response& response);
 
  private:
   // Sets up subscriptions based on ROS node parameters.
@@ -123,6 +127,7 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer save_octree_service_;
   ros::ServiceServer load_octree_service_;
   ros::ServiceServer set_box_occupancy_service_;
+  ros::ServiceServer set_display_bounds_service_;
 
   // Keep state of the cameras.
   sensor_msgs::CameraInfoPtr left_info_;
