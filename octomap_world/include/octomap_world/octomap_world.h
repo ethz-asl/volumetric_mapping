@@ -52,7 +52,7 @@ struct OctomapParameters {
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
-        treat_unknown_as_occupied(true),
+        treat_unknown_as_occupied(false),
         change_detection(false) {
     // Set reasonable defaults here...
   }
@@ -83,7 +83,7 @@ struct OctomapParameters {
   double visualize_max_z;
 
   // Collision checking.
-  double treat_unknown_as_occupied;
+  bool treat_unknown_as_occupied;
 
   // Whether to track changes -- must be set to true to use getChangedPoints().
   bool change_detection;
