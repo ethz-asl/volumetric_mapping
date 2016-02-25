@@ -91,7 +91,7 @@ void OctomapManager::setParametersFromROS() {
                     full_image_size_.y());
   nh_private_.param("map_publish_frequency", map_publish_frequency_,
                     map_publish_frequency_);
-  nh_private_.param("treat_unknown_as_occupied", params.treat_unknown_as_occupied,
+  nh_private_.param("treat_unknown_as_occ", params.treat_unknown_as_occupied,
                     params.treat_unknown_as_occupied);
   nh_private_.param("change_detection", params.change_detection,
                     params.change_detection);
