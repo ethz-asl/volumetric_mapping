@@ -93,6 +93,8 @@ void OctomapManager::setParametersFromROS() {
                     map_publish_frequency_);
   nh_private_.param("treat_unknown_as_occupied", params.treat_unknown_as_occupied,
                     params.treat_unknown_as_occupied);
+  nh_private_.param("change_detection", params.change_detection,
+                    params.change_detection);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
