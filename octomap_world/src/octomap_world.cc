@@ -223,14 +223,18 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& bounding_box_size) const {
   // First case: center point is unknown or occupied. Can just quit.
   CellStatus center_status = getCellStatusPoint(point);
-  if (center_status != CellStatus::kFree) {
+  if (center_status != CellStatus::kFree && params_.treat_unknown_as_occupied) {
     return center_status;
   }
 
   // Also if center is outside of the bounds.
   octomap::OcTreeKey key;
   if (!octree_->coordToKeyChecked(pointEigenToOctomap(point), key)) {
-    return CellStatus::kUnknown;
+    if (params_.treat_unknown_as_occupied) {
+      return CellStatus::kUnknown;
+    } else {
+      return CellStatus::kOccupied;
+    }
   }
 
   // Now we have to iterate over everything in the bounding box.
