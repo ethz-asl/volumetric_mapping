@@ -52,8 +52,8 @@ struct OctomapParameters {
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
-        treat_unknown_as_occupied(false),
-        change_detection(false) {
+        treat_unknown_as_occupied(true),
+        change_detection_enabled(false) {
     // Set reasonable defaults here...
   }
 
@@ -86,7 +86,7 @@ struct OctomapParameters {
   bool treat_unknown_as_occupied;
 
   // Whether to track changes -- must be set to true to use getChangedPoints().
-  bool change_detection;
+  bool change_detection_enabled;
 };
 
 // A wrapper around octomap that allows insertion from various ROS message

@@ -79,7 +79,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   octree_->setClampingThresMin(params.threshold_min);
   octree_->setClampingThresMax(params.threshold_max);
   octree_->setOccupancyThres(params.threshold_occupancy);
-  octree_->enableChangeDetection(params.change_detection);
+  octree_->enableChangeDetection(params.change_detection_enabled);
 
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
