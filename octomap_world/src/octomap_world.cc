@@ -766,6 +766,8 @@ void OctomapWorld::getChangedPoints(
     std::vector<Eigen::Vector3d>* changed_points,
     std::vector<bool>* changed_states) {
   CHECK_NOTNULL(changed_points);
+  // These keys are always *leaf node* keys, even if the actual change was in
+  // a larger cube (see Octomap docs).
   octomap::KeyBoolMap::const_iterator start_key = octree_->changedKeysBegin();
   octomap::KeyBoolMap::const_iterator end_key = octree_->changedKeysEnd();
 
