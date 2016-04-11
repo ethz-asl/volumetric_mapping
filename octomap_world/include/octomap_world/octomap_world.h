@@ -177,7 +177,7 @@ class OctomapWorld : public WorldBase {
   // IMPORTANT NOTE: change_detection MUST be set to true in the parameters in
   // order for this to work!
   void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
-  std::vector<bool>* changed_states);
+                        std::vector<bool>* changed_states);
 
  protected:
   // Actual implementation for inserting disparity data.
