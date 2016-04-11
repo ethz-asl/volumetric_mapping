@@ -91,8 +91,11 @@ void OctomapManager::setParametersFromROS() {
                     full_image_size_.y());
   nh_private_.param("map_publish_frequency", map_publish_frequency_,
                     map_publish_frequency_);
-  nh_private_.param("treat_unknown_as_occupied", params.treat_unknown_as_occupied,
+  nh_private_.param("treat_unknown_as_occupied",
+                    params.treat_unknown_as_occupied,
                     params.treat_unknown_as_occupied);
+  nh_private_.param("change_detection_enabled", params.change_detection_enabled,
+                    params.change_detection_enabled);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -144,6 +147,8 @@ void OctomapManager::advertiseServices() {
       "load_map", &OctomapManager::loadOctomapCallback, this);
   set_box_occupancy_service_ = nh_private_.advertiseService(
       "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
+  set_display_bounds_service_ = nh_private_.advertiseService(
+      "set_display_bounds", &OctomapManager::setDisplayBoundsCallback, this);
 }
 
 void OctomapManager::advertisePublishers() {
@@ -228,6 +233,14 @@ bool OctomapManager::setBoxOccupancyCallback(
   } else {
     setFree(bounding_box_center, bounding_box_size);
   }
+  publishAll();
+}
+
+bool OctomapManager::setDisplayBoundsCallback(
+    volumetric_msgs::SetDisplayBounds::Request& request,
+    volumetric_msgs::SetDisplayBounds::Response& response) {
+  params_.visualize_min_z = request.min_z;
+  params_.visualize_max_z = request.max_z;
   publishAll();
 }
 
