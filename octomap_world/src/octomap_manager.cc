@@ -234,6 +234,7 @@ bool OctomapManager::setBoxOccupancyCallback(
     setFree(bounding_box_center, bounding_box_size);
   }
   publishAll();
+  return true;
 }
 
 bool OctomapManager::setDisplayBoundsCallback(
@@ -242,6 +243,7 @@ bool OctomapManager::setDisplayBoundsCallback(
   params_.visualize_min_z = request.min_z;
   params_.visualize_max_z = request.max_z;
   publishAll();
+  return true;
 }
 
 void OctomapManager::leftCameraInfoCallback(
