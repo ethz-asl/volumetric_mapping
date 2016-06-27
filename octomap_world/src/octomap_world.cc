@@ -494,7 +494,8 @@ void OctomapWorld::setOctomapFromMsg(const octomap_msgs::Octomap& msg) {
 }
 
 void OctomapWorld::setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg) {
-  octree_.reset(octomap_msgs::binaryMsgToMap(msg));
+  octree_.reset(
+      dynamic_cast<octomap::OcTree*>(octomap_msgs::binaryMsgToMap(msg)));
 }
 
 void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
