@@ -494,7 +494,8 @@ void OctomapWorld::setOctomapFromMsg(const octomap_msgs::Octomap& msg) {
 }
 
 void OctomapWorld::setOctomapFromBinaryMsg(const octomap_msgs::Octomap& msg) {
-  octree_.reset(octomap_msgs::binaryMsgToMap(msg));
+  octree_.reset(
+      dynamic_cast<octomap::OcTree*>(octomap_msgs::binaryMsgToMap(msg)));
 }
 
 void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
@@ -560,12 +561,12 @@ void OctomapWorld::generateMarkerArray(
   octree_->getMetricMax(max_x, max_y, max_z);
 
   // Update values from params if necessary.
-  if (params_.visualize_min_z > min_z) {
-    min_z = params_.visualize_min_z;
-  }
-  if (params_.visualize_max_z < max_z) {
-    max_z = params_.visualize_max_z;
-  }
+  // if (params_.visualize_min_z > min_z) {
+  min_z = params_.visualize_min_z;
+  //}
+  // if (params_.visualize_max_z < max_z) {
+  max_z = params_.visualize_max_z;
+  //}
 
   for (int i = 0; i < tree_depth; ++i) {
     double size = octree_->getNodeSize(i);
