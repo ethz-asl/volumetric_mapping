@@ -157,6 +157,8 @@ void OctomapManager::advertisePublishers() {
   free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "octomap_free", 1, true);
 
+  pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("octomap_pcl", 1, true);
+
   binary_map_pub_ =
       nh_private_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
   full_map_pub_ =
@@ -169,21 +171,40 @@ void OctomapManager::advertisePublishers() {
 }
 
 void OctomapManager::publishAll() {
-  visualization_msgs::MarkerArray occupied_nodes, free_nodes;
-  generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
+  if(occupied_nodes_pub_.getNumSubscribers() > 0 || free_nodes_pub_.getNumSubscribers() > 0 ){
+    visualization_msgs::MarkerArray occupied_nodes, free_nodes;
+    generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
+    occupied_nodes_pub_.publish(occupied_nodes);
+    free_nodes_pub_.publish(free_nodes);
+  }
 
-  occupied_nodes_pub_.publish(occupied_nodes);
-  free_nodes_pub_.publish(free_nodes);
+  if(binary_map_pub_.getNumSubscribers() > 0){
+    octomap_msgs::Octomap binary_map;
+    getOctomapBinaryMsg(&binary_map);
+    binary_map.header.frame_id = world_frame_;
+    binary_map_pub_.publish(binary_map);
+  }
 
-  octomap_msgs::Octomap binary_map, full_map;
-  getOctomapBinaryMsg(&binary_map);
-  getOctomapFullMsg(&full_map);
+  if(full_map_pub_.getNumSubscribers() > 0){
+    octomap_msgs::Octomap full_map;
+    getOctomapBinaryMsg(&full_map);
+    full_map.header.frame_id = world_frame_;
+    full_map_pub_.publish(full_map);
+  }
 
-  binary_map.header.frame_id = world_frame_;
-  full_map.header.frame_id = world_frame_;
-
-  binary_map_pub_.publish(binary_map);
-  full_map_pub_.publish(full_map);
+  if(pcl_pub_.getNumSubscribers() > 0){
+    Transformation robot_to_world;
+    lookupTransform("/state", world_frame_, ros::Time::now(), &robot_to_world);
+    Eigen::Vector3d robot_center = robot_to_world.getPosition();
+    Eigen::Vector3d bounding_box_size(3.0,3.0,3.0);
+    pcl::PointCloud<pcl::PointXYZ> point_cloud;
+    getOccupiedPointcloudInBoundingBox(robot_center, bounding_box_size, &point_cloud);
+    sensor_msgs::PointCloud2 cloud;
+    pcl::toROSMsg (point_cloud, cloud);
+    cloud.header.frame_id = world_frame_;
+    cloud.header.stamp = ros::Time::now();
+    pcl_pub_.publish(cloud);
+  }
 }
 
 void OctomapManager::publishAllEvent(const ros::TimerEvent& e) { publishAll(); }

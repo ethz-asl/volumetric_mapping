@@ -40,6 +40,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+
 namespace volumetric_mapping {
 
 // An inherited class from OctomapWorld, which also handles the connection to
@@ -115,6 +117,9 @@ class OctomapManager : public OctomapWorld {
   // Publish full state of octomap.
   ros::Publisher binary_map_pub_;
   ros::Publisher full_map_pub_;
+
+  // Publish voxel centeroids as pcl
+  ros::Publisher pcl_pub_;
 
   // Publish markers for visualization.
   ros::Publisher occupied_nodes_pub_;
