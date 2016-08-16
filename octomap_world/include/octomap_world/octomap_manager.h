@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
+#include <mutex>
 
 namespace volumetric_mapping {
 
@@ -59,6 +60,9 @@ class OctomapManager : public OctomapWorld {
       const stereo_msgs::DisparityImageConstPtr& disparity);
   void insertPointcloudWithTf(
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+
+  // Data insertion thread
+  void insertPointCloudThread();
 
   // Camera info callbacks.
   void leftCameraInfoCallback(const sensor_msgs::CameraInfoPtr& left_info);
@@ -132,6 +136,12 @@ class OctomapManager : public OctomapWorld {
   // Keep state of the cameras.
   sensor_msgs::CameraInfoPtr left_info_;
   sensor_msgs::CameraInfoPtr right_info_;
+
+  // Variables for pointcloud insertion thread
+  sensor_msgs::PointCloud2::ConstPtr current_pointcloud_;
+  Transformation current_transform_;
+  bool new_pointcloud_ready_;
+  std::mutex pointcloud_insertion_mutex_;
 
   // Only calculate Q matrix for disparity once.
   bool Q_initialized_;

@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glog/logging.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace volumetric_mapping {
 
@@ -43,7 +44,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
-      map_publish_frequency_(0.0) {
+      map_publish_frequency_(0.0),
+      new_pointcloud_ready_(false) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -131,7 +133,7 @@ void OctomapManager::subscribe() {
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
-      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+      "pointcloud", 1, &OctomapManager::insertPointcloudWithTf, this);
 }
 
 void OctomapManager::advertiseServices() {
@@ -290,7 +292,27 @@ void OctomapManager::insertPointcloudWithTf(
   Transformation sensor_to_world;
   if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                       pointcloud->header.stamp, &sensor_to_world)) {
-    insertPointcloud(sensor_to_world, pointcloud);
+    pointcloud_insertion_mutex_.lock();
+    current_pointcloud_ = pointcloud;
+    current_transform_ = sensor_to_world;
+    new_pointcloud_ready_ = true;
+    pointcloud_insertion_mutex_.unlock();
+  }
+}
+
+void OctomapManager::insertPointCloudThread() {
+  while (ros::ok()) {
+    if (new_pointcloud_ready_) {
+      pointcloud_insertion_mutex_.lock();
+      pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pointcloud(
+          new pcl::PointCloud<pcl::PointXYZ>);
+      pcl::fromROSMsg(*current_pointcloud_, *pcl_pointcloud);
+      Transformation sensor_to_world = current_transform_;
+      new_pointcloud_ready_ = false;
+      pointcloud_insertion_mutex_.unlock();
+
+      insertPointcloud(sensor_to_world, pcl_pointcloud);
+    }
   }
 }
 
