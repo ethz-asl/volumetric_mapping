@@ -43,7 +43,8 @@ int main(int argc, char** argv) {
 
   std::thread insert_pointcloud_thread(&volumetric_mapping::OctomapManager::insertPointCloudThread, &manager);
 
-  ros::spin();
+  ros::MultiThreadedSpinner spinner(7);
+  spinner.spin();
 
   insert_pointcloud_thread.join();
 
