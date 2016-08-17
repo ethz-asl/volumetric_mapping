@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
 #include <mutex>
+#include <atomic>
 
 namespace volumetric_mapping {
 
@@ -140,7 +141,7 @@ class OctomapManager : public OctomapWorld {
   // Variables for pointcloud insertion thread
   sensor_msgs::PointCloud2::ConstPtr current_pointcloud_;
   Transformation current_transform_;
-  bool new_pointcloud_ready_;
+  std::atomic<bool> new_pointcloud_ready_;
   std::mutex pointcloud_insertion_mutex_;
 
   // Only calculate Q matrix for disparity once.

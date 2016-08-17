@@ -133,7 +133,7 @@ void OctomapManager::subscribe() {
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
-      "pointcloud", 1, &OctomapManager::insertPointcloudWithTf, this);
+      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
 }
 
 void OctomapManager::advertiseServices() {
@@ -301,6 +301,7 @@ void OctomapManager::insertPointcloudWithTf(
 }
 
 void OctomapManager::insertPointCloudThread() {
+  ros::Rate rate(10);
   while (ros::ok()) {
     if (new_pointcloud_ready_) {
       pointcloud_insertion_mutex_.lock();
@@ -313,6 +314,7 @@ void OctomapManager::insertPointCloudThread() {
 
       insertPointcloud(sensor_to_world, pcl_pointcloud);
     }
+    else rate.sleep();
   }
 }
 
