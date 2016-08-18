@@ -307,7 +307,7 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   // etc).
   if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
     ros::Duration timestamp_age = ros::Time::now() - time_to_lookup;
-    if (timestamp_age > tf_listener_.getCacheLength()) {
+    if (timestamp_age < tf_listener_.getCacheLength()) {
       time_to_lookup = ros::Time(0);
       ROS_WARN("Using latest TF transform instead of timestamp match.");
     }
