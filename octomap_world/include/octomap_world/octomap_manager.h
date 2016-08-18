@@ -30,6 +30,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 #define OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 
+#include <glog/logging.h>
+#include <gflags/gflags.h>
+
 #include "octomap_world/octomap_world.h"
 
 #include <octomap_msgs/GetOctomap.h>
