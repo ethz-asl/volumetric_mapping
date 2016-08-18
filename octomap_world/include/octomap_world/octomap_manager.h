@@ -32,6 +32,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "octomap_world/octomap_world.h"
 
+#include <atomic>
+#include <mutex>
+
 #include <octomap_msgs/GetOctomap.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
@@ -39,8 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
-#include <mutex>
-#include <atomic>
 
 namespace volumetric_mapping {
 
@@ -59,10 +60,9 @@ class OctomapManager : public OctomapWorld {
   // Data insertion callbacks with TF frame resolution through the listener.
   void insertDisparityImageWithTf(
       const stereo_msgs::DisparityImageConstPtr& disparity);
-  void pointCloudCallback(
-      const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+  void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& point_cloud);
 
-  // Data insertion thread
+  // Data insertion thread.
   void insertPointCloudThread();
 
   // Camera info callbacks.
@@ -138,11 +138,13 @@ class OctomapManager : public OctomapWorld {
   sensor_msgs::CameraInfoPtr left_info_;
   sensor_msgs::CameraInfoPtr right_info_;
 
-  // Variables for pointcloud insertion thread
-  sensor_msgs::PointCloud2::ConstPtr current_pointcloud_;
+  // Variables for pointcloud insertion thread.
+  sensor_msgs::PointCloud2::ConstPtr current_point_cloud_;
   Transformation current_transform_;
-  std::atomic<bool> new_pointcloud_ready_;
-  std::mutex pointcloud_insertion_mutex_;
+  std::atomic<bool> new_point_cloud_ready_;
+  std::mutex point_cloud_insertion_mutex_;
+
+  static constexpr double kThreadRate = 10;
 
   // Only calculate Q matrix for disparity once.
   bool Q_initialized_;

@@ -45,7 +45,7 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
       map_publish_frequency_(0.0),
-      new_pointcloud_ready_(false) {
+      new_point_cloud_ready_(false) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -287,30 +287,30 @@ void OctomapManager::insertDisparityImageWithTf(
 }
 
 void OctomapManager::pointCloudCallback(
-    const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
+    const sensor_msgs::PointCloud2::ConstPtr& point_cloud) {
   // Look up transform from sensor frame to world frame.
   Transformation sensor_to_world;
-  if (lookupTransform(pointcloud->header.frame_id, world_frame_,
-                      pointcloud->header.stamp, &sensor_to_world)) {
-    pointcloud_insertion_mutex_.lock();
-    current_pointcloud_ = pointcloud;
+  if (lookupTransform(point_cloud->header.frame_id, world_frame_,
+                      point_cloud->header.stamp, &sensor_to_world)) {
+    point_cloud_insertion_mutex_.lock();
+    current_point_cloud_ = point_cloud;
     current_transform_ = sensor_to_world;
-    new_pointcloud_ready_ = true;
-    pointcloud_insertion_mutex_.unlock();
+    new_point_cloud_ready_ = true;
+    point_cloud_insertion_mutex_.unlock();
   }
 }
 
 void OctomapManager::insertPointCloudThread() {
-  ros::Rate rate(10);
+  ros::Rate rate(kThreadRate);
   while (ros::ok()) {
-    if (new_pointcloud_ready_) {
-      pointcloud_insertion_mutex_.lock();
+    if (new_point_cloud_ready_) {
       pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pointcloud(
           new pcl::PointCloud<pcl::PointXYZ>);
-      pcl::fromROSMsg(*current_pointcloud_, *pcl_pointcloud);
+      point_cloud_insertion_mutex_.lock();
+      pcl::fromROSMsg(*current_point_cloud_, *pcl_pointcloud);
       Transformation sensor_to_world = current_transform_;
-      new_pointcloud_ready_ = false;
-      pointcloud_insertion_mutex_.unlock();
+      new_point_cloud_ready_ = false;
+      point_cloud_insertion_mutex_.unlock();
 
       insertPointcloud(sensor_to_world, pcl_pointcloud);
     }
