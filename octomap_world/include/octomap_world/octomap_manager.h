@@ -144,7 +144,7 @@ class OctomapManager : public OctomapWorld {
   std::atomic<bool> new_point_cloud_ready_;
   std::mutex point_cloud_insertion_mutex_;
 
-  static constexpr double kThreadRate = 10;
+  static constexpr double kInsertionThreadRate = 10;
 
   // Only calculate Q matrix for disparity once.
   bool Q_initialized_;
