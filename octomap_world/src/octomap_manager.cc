@@ -301,7 +301,7 @@ void OctomapManager::pointCloudCallback(
 }
 
 void OctomapManager::insertPointCloudThread() {
-  ros::Rate rate(kThreadRate);
+  ros::Rate rate(kInsertionThreadRate);
   while (ros::ok()) {
     if (new_point_cloud_ready_) {
       pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pointcloud(
