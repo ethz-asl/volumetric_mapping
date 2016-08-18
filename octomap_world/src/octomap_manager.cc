@@ -312,7 +312,7 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
       ROS_WARN("Using latest TF transform instead of timestamp match.");
     }
     else {
-      ROS_WARN("Tried to look up transform older than cache limit.");
+      ROS_ERROR("Requested transform time older than cache limit.");
       return false;
     }
   }
