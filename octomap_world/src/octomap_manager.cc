@@ -306,8 +306,15 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
   // the latest (this is to work with bag files and static transform publisher,
   // etc).
   if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
-    time_to_lookup = ros::Time(0);
-    ROS_WARN("Using latest TF transform instead of timestamp match.");
+    ros::Duration timestamp_age = ros::Time::now() - time_to_lookup;
+    if (timestamp_age < tf_listener_.getCacheLength()) {
+      time_to_lookup = ros::Time(0);
+      ROS_WARN("Using latest TF transform instead of timestamp match.");
+    }
+    else {
+      ROS_ERROR("Requested transform time older than cache limit.");
+      return false;
+    }
   }
 
   try {
