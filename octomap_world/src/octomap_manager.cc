@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glog/logging.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace volumetric_mapping {
 
@@ -43,7 +44,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
-      map_publish_frequency_(0.0) {
+      map_publish_frequency_(0.0),
+      new_point_cloud_ready_(false) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -131,7 +133,7 @@ void OctomapManager::subscribe() {
   disparity_sub_ = nh_.subscribe(
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
-      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+      "pointcloud", 40, &OctomapManager::pointCloudCallback, this);
 }
 
 void OctomapManager::advertiseServices() {
@@ -284,13 +286,35 @@ void OctomapManager::insertDisparityImageWithTf(
   }
 }
 
-void OctomapManager::insertPointcloudWithTf(
-    const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
+void OctomapManager::pointCloudCallback(
+    const sensor_msgs::PointCloud2::ConstPtr& point_cloud) {
   // Look up transform from sensor frame to world frame.
   Transformation sensor_to_world;
-  if (lookupTransform(pointcloud->header.frame_id, world_frame_,
-                      pointcloud->header.stamp, &sensor_to_world)) {
-    insertPointcloud(sensor_to_world, pointcloud);
+  if (lookupTransform(point_cloud->header.frame_id, world_frame_,
+                      point_cloud->header.stamp, &sensor_to_world)) {
+    point_cloud_insertion_mutex_.lock();
+    current_point_cloud_ = point_cloud;
+    current_transform_ = sensor_to_world;
+    new_point_cloud_ready_ = true;
+    point_cloud_insertion_mutex_.unlock();
+  }
+}
+
+void OctomapManager::insertPointCloudThread() {
+  ros::Rate rate(kInsertionThreadRate);
+  while (ros::ok()) {
+    if (new_point_cloud_ready_) {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pointcloud(
+          new pcl::PointCloud<pcl::PointXYZ>);
+      point_cloud_insertion_mutex_.lock();
+      pcl::fromROSMsg(*current_point_cloud_, *pcl_pointcloud);
+      Transformation sensor_to_world = current_transform_;
+      new_point_cloud_ready_ = false;
+      point_cloud_insertion_mutex_.unlock();
+
+      insertPointcloud(sensor_to_world, pcl_pointcloud);
+    }
+    else rate.sleep();
   }
 }
 

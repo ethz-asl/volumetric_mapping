@@ -27,6 +27,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <thread>
+
 #include "octomap_world/octomap_manager.h"
 
 int main(int argc, char** argv) {
@@ -39,6 +41,13 @@ int main(int argc, char** argv) {
 
   volumetric_mapping::OctomapManager manager(nh, nh_private);
 
-  ros::spin();
+  std::thread insert_pointcloud_thread(
+      &volumetric_mapping::OctomapManager::insertPointCloudThread, &manager);
+
+  ros::MultiThreadedSpinner spinner;
+  spinner.spin();
+
+  insert_pointcloud_thread.join();
+
   return 0;
 }
