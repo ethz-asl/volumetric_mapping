@@ -40,6 +40,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       world_frame_("world"),
+      use_tf_transforms_(true),
+      timestamp_tolerance_ns_(10000000),
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
@@ -298,6 +300,17 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const std::string& to_frame,
                                      const ros::Time& timestamp,
                                      Transformation* transform) {
+  if (use_tf_transforms_) {
+    return lookupTransformTf(from_frame, to_frame, timestamp, transform);
+  } else {
+    return lookupTransformQueue(from_frame, to_frame, timestamp, transform);
+  }
+}
+
+bool OctomapManager::lookupTransformTf(const std::string& from_frame,
+                                       const std::string& to_frame,
+                                       const ros::Time& timestamp,
+                                       Transformation* transform) {
   tf::StampedTransform tf_transform;
 
   ros::Time time_to_lookup = timestamp;
@@ -310,8 +323,7 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
     if (timestamp_age < tf_listener_.getCacheLength()) {
       time_to_lookup = ros::Time(0);
       ROS_WARN("Using latest TF transform instead of timestamp match.");
-    }
-    else {
+    } else {
       ROS_ERROR("Requested transform time older than cache limit.");
       return false;
     }
@@ -328,6 +340,60 @@ bool OctomapManager::lookupTransform(const std::string& from_frame,
 
   tf::transformTFToKindr(tf_transform, transform);
   return true;
+}
+
+void OctomapManager::transformCallback(
+    const geometry_msgs::TransformStamped& transform_msg) {
+  transform_queue_.push_back(transform_msg);
+}
+
+bool OctomapManager::lookupTransformQueue(const std::string& from_frame,
+                                          const std::string& to_frame,
+                                          const ros::Time& timestamp,
+                                          Transformation* transform) {
+  // Try to match the transforms in the queue.
+  bool match_found = false;
+  std::deque<geometry_msgs::TransformStamped>::iterator it =
+      transform_queue_.begin();
+  for (; it != transform_queue_.end(); ++it) {
+    // If the current transform is newer than the requested timestamp, we need
+    // to break.
+    if (it->header.stamp > timestamp) {
+      if ((it->header.stamp - timestamp).toNSec() < timestamp_tolerance_ns_) {
+        match_found = true;
+      }
+      break;
+    }
+
+    if ((timestamp - it->header.stamp).toNSec() < timestamp_tolerance_ns_) {
+      match_found = true;
+      break;
+    }
+  }
+
+  if (match_found) {
+    Transformation T_G_D;
+    tf::transformMsgToKindr(it->transform, &T_G_D);
+
+    // If we have a static transform, apply it too.
+    // Transform should actually be T_G_C. So need to take it through the full
+    // chain.
+    *transform = T_G_D * T_B_D_.inverse() * T_B_C_;
+
+    // And also clear the queue up to this point. This leaves the current
+    // message in place.
+    transform_queue_.erase(transform_queue_.begin(), it);
+  } else {
+    ROS_WARN_STREAM_THROTTLE(
+        30, "No match found for transform timestamp: " << timestamp);
+    if (!transform_queue_.empty()) {
+      ROS_WARN_STREAM_THROTTLE(
+          30,
+          "Queue front: " << transform_queue_.front().header.stamp
+                          << " back: " << transform_queue_.back().header.stamp);
+    }
+  }
+  return match_found;
 }
 
 }  // namespace volumetric_mapping
