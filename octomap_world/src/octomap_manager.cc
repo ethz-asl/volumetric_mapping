@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glog/logging.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
+#include <minkindr_conversions/kindr_xml.h>
 
 namespace volumetric_mapping {
 
@@ -103,6 +104,46 @@ void OctomapManager::setParametersFromROS() {
   std::vector<double> Q_vec;
   if (nh_private_.getParam("Q", Q_vec)) {
     Q_initialized_ = setQFromParams(&Q_vec);
+  }
+
+  // Transform settings.
+  nh_private_.param("use_tf_transforms", use_tf_transforms_,
+                    use_tf_transforms_);
+  // If we use topic transforms, we have 2 parts: a dynamic transform from a
+  // topic and a static transform from parameters.
+  // Static transform should be T_G_D (where D is whatever sensor the
+  // dynamic coordinate frame is in) and the static should be T_D_C (where
+  // C is the sensor frame that produces the depth data). It is possible to
+  // specific T_C_D and set invert_static_tranform to true.
+  if (!use_tf_transforms_) {
+    transform_sub_ =
+        nh_.subscribe("transform", 40, &OctomapManager::transformCallback, this);
+    // Retrieve T_D_C from params.
+    XmlRpc::XmlRpcValue T_B_D_xml;
+    // TODO(helenol): split out into a function to avoid duplication.
+    if (nh_private_.getParam("T_B_D", T_B_D_xml)) {
+      kindr::minimal::xmlRpcToKindr(T_B_D_xml, &T_B_D_);
+
+      // See if we need to invert it.
+      bool invert_static_tranform = false;
+      nh_private_.param("invert_T_B_D", invert_static_tranform,
+                        invert_static_tranform);
+      if (invert_static_tranform) {
+        T_B_D_ = T_B_D_.inverse();
+      }
+    }
+    XmlRpc::XmlRpcValue T_B_C_xml;
+    if (nh_private_.getParam("T_B_C", T_B_C_xml)) {
+      kindr::minimal::xmlRpcToKindr(T_B_C_xml, &T_B_C_);
+
+      // See if we need to invert it.
+      bool invert_static_tranform = false;
+      nh_private_.param("invert_T_B_C", invert_static_tranform,
+                        invert_static_tranform);
+      if (invert_static_tranform) {
+        T_B_C_ = T_B_C_.inverse();
+      }
+    }
   }
 
   // Set the parent class parameters.
