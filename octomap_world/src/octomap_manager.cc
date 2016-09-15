@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "octomap_world/octomap_manager.h"
 
 #include <glog/logging.h>
-#include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
+#include <minkindr_conversions/kindr_tf.h>
 
 namespace volumetric_mapping {
 
@@ -132,6 +132,14 @@ void OctomapManager::subscribe() {
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
       "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+  octomap_sub_ =
+      nh_.subscribe("input_octomap", 1, &OctomapManager::octomapCallback, this);
+}
+
+void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
+  setOctomapFromMsg(msg);
+  publishAll();
+  ROS_INFO_ONCE("Got octomap from message.");
 }
 
 void OctomapManager::advertiseServices() {
