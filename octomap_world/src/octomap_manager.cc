@@ -41,7 +41,9 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       world_frame_("world"),
+      robot_frame_("state"),
       use_tf_transforms_(true),
+      latch_topics_(true),
       timestamp_tolerance_ns_(10000000),
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
@@ -69,6 +71,7 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
 void OctomapManager::setParametersFromROS() {
   OctomapParameters params;
   nh_private_.param("tf_frame", world_frame_, world_frame_);
+  nh_private_.param("robot_frame", robot_frame_, robot_frame_);
   nh_private_.param("resolution", params.resolution, params.resolution);
   nh_private_.param("probability_hit", params.probability_hit,
                     params.probability_hit);
@@ -106,6 +109,9 @@ void OctomapManager::setParametersFromROS() {
     Q_initialized_ = setQFromParams(&Q_vec);
   }
 
+  // Publisher/subscriber settings.
+  nh_private_.param("latch_topics", latch_topics_, latch_topics_);
+
   // Transform settings.
   nh_private_.param("use_tf_transforms", use_tf_transforms_,
                     use_tf_transforms_);
@@ -116,8 +122,8 @@ void OctomapManager::setParametersFromROS() {
   // C is the sensor frame that produces the depth data). It is possible to
   // specific T_C_D and set invert_static_tranform to true.
   if (!use_tf_transforms_) {
-    transform_sub_ =
-        nh_.subscribe("transform", 40, &OctomapManager::transformCallback, this);
+    transform_sub_ = nh_.subscribe("transform", 40,
+                                   &OctomapManager::transformCallback, this);
     // Retrieve T_D_C from params.
     XmlRpc::XmlRpcValue T_B_D_xml;
     // TODO(helenol): split out into a function to avoid duplication.
@@ -204,37 +210,62 @@ void OctomapManager::advertiseServices() {
 
 void OctomapManager::advertisePublishers() {
   occupied_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-      "octomap_occupied", 1, true);
+      "octomap_occupied", 1, latch_topics_);
   free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-      "octomap_free", 1, true);
+      "octomap_free", 1, latch_topics_);
 
-  binary_map_pub_ =
-      nh_private_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
-  full_map_pub_ =
-      nh_private_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
+  binary_map_pub_ = nh_private_.advertise<octomap_msgs::Octomap>(
+      "octomap_binary", 1, latch_topics_);
+  full_map_pub_ = nh_private_.advertise<octomap_msgs::Octomap>(
+      "octomap_full", 1, latch_topics_);
 
-  if (map_publish_frequency_ > 0.0)
+  pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("octomap_pcl", 1,
+                                                             false);
+
+  if (map_publish_frequency_ > 0.0) {
     map_publish_timer_ =
         nh_private_.createTimer(ros::Duration(1.0 / map_publish_frequency_),
                                 &OctomapManager::publishAllEvent, this);
+  }
 }
 
 void OctomapManager::publishAll() {
-  visualization_msgs::MarkerArray occupied_nodes, free_nodes;
-  generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
+  if (latch_topics_ || occupied_nodes_pub_.getNumSubscribers() > 0 ||
+      free_nodes_pub_.getNumSubscribers() > 0) {
+    visualization_msgs::MarkerArray occupied_nodes, free_nodes;
+    generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
+    occupied_nodes_pub_.publish(occupied_nodes);
+    free_nodes_pub_.publish(free_nodes);
+  }
 
-  occupied_nodes_pub_.publish(occupied_nodes);
-  free_nodes_pub_.publish(free_nodes);
+  if (latch_topics_ || binary_map_pub_.getNumSubscribers() > 0) {
+    octomap_msgs::Octomap binary_map;
+    getOctomapBinaryMsg(&binary_map);
+    binary_map.header.frame_id = world_frame_;
+    binary_map_pub_.publish(binary_map);
+  }
 
-  octomap_msgs::Octomap binary_map, full_map;
-  getOctomapBinaryMsg(&binary_map);
-  getOctomapFullMsg(&full_map);
+  if (latch_topics_ || full_map_pub_.getNumSubscribers() > 0) {
+    octomap_msgs::Octomap full_map;
+    getOctomapBinaryMsg(&full_map);
+    full_map.header.frame_id = world_frame_;
+    full_map_pub_.publish(full_map);
+  }
 
-  binary_map.header.frame_id = world_frame_;
-  full_map.header.frame_id = world_frame_;
-
-  binary_map_pub_.publish(binary_map);
-  full_map_pub_.publish(full_map);
+  if (use_tf_transforms_ && pcl_pub_.getNumSubscribers() > 0) {
+    Transformation robot_to_world;
+    if (lookupTransformTf(robot_frame_, world_frame_, ros::Time::now(),
+                      &robot_to_world)) {
+      Eigen::Vector3d robot_center = robot_to_world.getPosition();
+      pcl::PointCloud<pcl::PointXYZ> point_cloud;
+      getOccupiedPointcloudInBoundingBox(robot_center, robot_size_, &point_cloud);
+      sensor_msgs::PointCloud2 cloud;
+      pcl::toROSMsg(point_cloud, cloud);
+      cloud.header.frame_id = world_frame_;
+      cloud.header.stamp = ros::Time::now();
+      pcl_pub_.publish(cloud);
+    }
+  }
 }
 
 void OctomapManager::publishAllEvent(const ros::TimerEvent& e) { publishAll(); }
