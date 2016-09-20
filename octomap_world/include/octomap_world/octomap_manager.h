@@ -90,6 +90,8 @@ class OctomapManager : public OctomapWorld {
       volumetric_msgs::SetDisplayBounds::Request& request,
       volumetric_msgs::SetDisplayBounds::Response& response);
 
+  void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
+
  private:
   // Sets up subscriptions based on ROS node parameters.
   void setParametersFromROS();
@@ -102,6 +104,13 @@ class OctomapManager : public OctomapWorld {
   bool lookupTransform(const std::string& from_frame,
                        const std::string& to_frame, const ros::Time& timestamp,
                        Transformation* transform);
+  bool lookupTransformTf(const std::string& from_frame,
+                         const std::string& to_frame,
+                         const ros::Time& timestamp, Transformation* transform);
+  bool lookupTransformQueue(const std::string& from_frame,
+                            const std::string& to_frame,
+                            const ros::Time& timestamp,
+                            Transformation* transform);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -111,6 +120,15 @@ class OctomapManager : public OctomapWorld {
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
+  // Whether to use TF transform resolution (true) or fixed transforms from
+  // parameters and transform topics (false).
+  bool use_tf_transforms_;
+  int64_t timestamp_tolerance_ns_;
+  // B is the body frame of the robot, C is the camera/sensor frame creating
+  // the pointclouds, and D is the 'dynamic' frame; i.e., incoming messages
+  // are assumed to be T_G_D.
+  Transformation T_B_C_;
+  Transformation T_B_D_;
 
   // Subscriptions for input sensor data.
   ros::Subscriber disparity_sub_;
@@ -118,6 +136,9 @@ class OctomapManager : public OctomapWorld {
   ros::Subscriber right_info_sub_;
   ros::Subscriber pointcloud_sub_;
   ros::Subscriber octomap_sub_;
+
+  // Only used if use_tf_transforms_ set to false.
+  ros::Subscriber transform_sub_;
 
   // Publish full state of octomap.
   ros::Publisher binary_map_pub_;
@@ -146,6 +167,9 @@ class OctomapManager : public OctomapWorld {
   Eigen::Vector2d full_image_size_;
   double map_publish_frequency_;
   ros::Timer map_publish_timer_;
+
+  // Transform queue, used only when use_tf_transforms is false.
+  std::deque<geometry_msgs::TransformStamped> transform_queue_;
 };
 
 }  // namespace volumetric_mapping
