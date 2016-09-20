@@ -122,6 +122,7 @@ class OctomapManager : public OctomapWorld {
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
+  std::string robot_frame_;
   // Whether to use TF transform resolution (true) or fixed transforms from
   // parameters and transform topics (false).
   bool use_tf_transforms_;
@@ -132,6 +133,7 @@ class OctomapManager : public OctomapWorld {
   Transformation T_B_C_;
   Transformation T_B_D_;
 
+  bool latch_topics_;
   // Subscriptions for input sensor data.
   ros::Subscriber disparity_sub_;
   ros::Subscriber left_info_sub_;

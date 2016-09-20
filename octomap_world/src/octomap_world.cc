@@ -51,7 +51,7 @@ OctomapWorld::OctomapWorld() : OctomapWorld(OctomapParameters()) {}
 
 // Creates an octomap with the correct parameters.
 OctomapWorld::OctomapWorld(const OctomapParameters& params)
-    : robot_size_(Eigen::Vector3d::Zero()) {
+    : robot_size_(Eigen::Vector3d::Ones()) {
   setOctomapParameters(params);
 }
 
