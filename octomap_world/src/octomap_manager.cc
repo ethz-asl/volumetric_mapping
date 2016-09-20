@@ -175,6 +175,14 @@ void OctomapManager::subscribe() {
       "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
       "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+  octomap_sub_ =
+      nh_.subscribe("input_octomap", 1, &OctomapManager::octomapCallback, this);
+}
+
+void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
+  setOctomapFromMsg(msg);
+  publishAll();
+  ROS_INFO_ONCE("Got octomap from message.");
 }
 
 void OctomapManager::advertiseServices() {

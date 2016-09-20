@@ -63,6 +63,9 @@ class OctomapManager : public OctomapWorld {
   void insertPointcloudWithTf(
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 
+  // Input Octomap callback.
+  void octomapCallback(const octomap_msgs::Octomap& msg);
+
   // Camera info callbacks.
   void leftCameraInfoCallback(const sensor_msgs::CameraInfoPtr& left_info);
   void rightCameraInfoCallback(const sensor_msgs::CameraInfoPtr& right_info);
@@ -132,6 +135,7 @@ class OctomapManager : public OctomapWorld {
   ros::Subscriber left_info_sub_;
   ros::Subscriber right_info_sub_;
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber octomap_sub_;
 
   // Only used if use_tf_transforms_ set to false.
   ros::Subscriber transform_sub_;
