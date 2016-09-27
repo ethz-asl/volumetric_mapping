@@ -220,7 +220,7 @@ void OctomapManager::advertisePublishers() {
       "octomap_full", 1, latch_topics_);
 
   pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("octomap_pcl", 1,
-                                                             false);
+                                                             latch_topics_);
 
   if (map_publish_frequency_ > 0.0) {
     map_publish_timer_ =
@@ -252,7 +252,7 @@ void OctomapManager::publishAll() {
     full_map_pub_.publish(full_map);
   }
 
-  if (use_tf_transforms_ && pcl_pub_.getNumSubscribers() > 0) {
+  if (use_tf_transforms_ && (latch_topics_ || pcl_pub_.getNumSubscribers() > 0)) {
     Transformation robot_to_world;
     if (lookupTransformTf(robot_frame_, world_frame_, ros::Time::now(),
                       &robot_to_world)) {
