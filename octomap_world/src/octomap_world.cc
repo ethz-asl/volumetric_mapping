@@ -408,6 +408,44 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                         octree_->getClampingThresMaxLog());
 }
 
+void OctomapWorld::getOccupiedPointCloud(
+    pcl::PointCloud<pcl::PointXYZ> *output_cloud) const {
+  CHECK_NOTNULL(output_cloud);
+  output_cloud->clear();
+  unsigned int max_tree_depth = octree_->getTreeDepth();
+  double resolution = octree_->getResolution();
+  for (auto it = octree_->begin_leafs(); it != octree_->end_leafs(); ++it) {
+    if (octree_->isNodeOccupied(*it)) {
+      // If leaf is max depth add coordinates.
+      if (max_tree_depth == it.getDepth()) {
+        pcl::PointXYZ point(it.getX(), it.getY(), it.getZ());
+        output_cloud->push_back(point);
+      }
+      // If leaf is not max depth subdivide and add.
+      else {
+        unsigned int box_edge_length =
+            pow(2,max_tree_depth - it.getDepth() - 1);
+        double bbx_offset = box_edge_length * resolution - resolution/2;
+        Eigen::Vector3d bbx_offset_vec(bbx_offset, bbx_offset, bbx_offset);
+        Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
+        Eigen::Vector3d bbx_min = center - bbx_offset_vec;
+        Eigen::Vector3d bbx_max = center + bbx_offset_vec;
+        for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
+             x_position += resolution) {
+          for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+               y_position += resolution) {
+            for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
+                 z_position += resolution) {
+              pcl::PointXYZ point(x_position, y_position, z_position);
+              output_cloud->push_back(point);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 void OctomapWorld::getOccupiedPointcloudInBoundingBox(
     const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
     pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {

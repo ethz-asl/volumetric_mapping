@@ -121,6 +121,12 @@ class WorldBase {
     return CellStatus::kFree;
   }
 
+  virtual void getOccupiedPointCloud(
+      pcl::PointCloud<pcl::PointXYZ> *output_cloud) const {
+    // Blank world by default, so don't fill the pointcloud.
+    return;
+  }
+
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
       pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
