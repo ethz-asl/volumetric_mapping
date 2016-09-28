@@ -409,23 +409,25 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
 }
 
 void OctomapWorld::getOccupiedPointCloud(
-    pcl::PointCloud<pcl::PointXYZ> *output_cloud) const {
-  CHECK_NOTNULL(output_cloud);
-  output_cloud->clear();
+    pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
+  CHECK_NOTNULL(output_cloud)->clear();
   unsigned int max_tree_depth = octree_->getTreeDepth();
   double resolution = octree_->getResolution();
-  for (auto it = octree_->begin_leafs(); it != octree_->end_leafs(); ++it) {
+  for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs();
+       it != octree_->end_leafs(); ++it) {
     if (octree_->isNodeOccupied(*it)) {
       // If leaf is max depth add coordinates.
       if (max_tree_depth == it.getDepth()) {
         pcl::PointXYZ point(it.getX(), it.getY(), it.getZ());
         output_cloud->push_back(point);
       }
-      // If leaf is not max depth subdivide and add.
+      // If leaf is not max depth it represents an occupied voxel with edge
+      // length of 2^(max_tree_depth - leaf_depth) * resolution.
+      // We use multiple points to visualize this filled volume.
       else {
-        unsigned int box_edge_length =
+        const unsigned int box_edge_length =
             pow(2,max_tree_depth - it.getDepth() - 1);
-        double bbx_offset = box_edge_length * resolution - resolution/2;
+        const double bbx_offset = box_edge_length * resolution - resolution/2;
         Eigen::Vector3d bbx_offset_vec(bbx_offset, bbx_offset, bbx_offset);
         Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
         Eigen::Vector3d bbx_min = center - bbx_offset_vec;
@@ -436,8 +438,9 @@ void OctomapWorld::getOccupiedPointCloud(
                y_position += resolution) {
             for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
                  z_position += resolution) {
-              pcl::PointXYZ point(x_position, y_position, z_position);
-              output_cloud->push_back(point);
+              output_cloud->push_back(pcl::PointXYZ(x_position,
+                                                    y_position,
+                                                    z_position));
             }
           }
         }
