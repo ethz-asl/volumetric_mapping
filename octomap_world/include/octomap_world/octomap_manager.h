@@ -148,7 +148,8 @@ class OctomapManager : public OctomapWorld {
   ros::Publisher binary_map_pub_;
   ros::Publisher full_map_pub_;
 
-  // Publish voxel centeroids as pcl
+  // Publish voxel centroids as pcl.
+  ros::Publisher nearest_obstacle_pub_;
   ros::Publisher pcl_pub_;
 
   // Publish markers for visualization.

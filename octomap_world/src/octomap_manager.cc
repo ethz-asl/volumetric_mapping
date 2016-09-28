@@ -220,7 +220,9 @@ void OctomapManager::advertisePublishers() {
       "octomap_full", 1, latch_topics_);
 
   pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("octomap_pcl", 1,
-                                                             false);
+                                                             latch_topics_);
+  nearest_obstacle_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>(
+      "nearest_obstacle", 1, false);
 
   if (map_publish_frequency_ > 0.0) {
     map_publish_timer_ =
@@ -252,7 +254,16 @@ void OctomapManager::publishAll() {
     full_map_pub_.publish(full_map);
   }
 
-  if (use_tf_transforms_ && pcl_pub_.getNumSubscribers() > 0) {
+  if (latch_topics_ || pcl_pub_.getNumSubscribers() > 0) {
+    pcl::PointCloud<pcl::PointXYZ> point_cloud;
+    getOccupiedPointCloud(&point_cloud);
+    sensor_msgs::PointCloud2 cloud;
+    pcl::toROSMsg(point_cloud, cloud);
+    cloud.header.frame_id = world_frame_;
+    pcl_pub_.publish(cloud);
+  }
+
+  if (use_tf_transforms_ && nearest_obstacle_pub_.getNumSubscribers() > 0) {
     Transformation robot_to_world;
     if (lookupTransformTf(robot_frame_, world_frame_, ros::Time::now(),
                       &robot_to_world)) {
@@ -263,7 +274,7 @@ void OctomapManager::publishAll() {
       pcl::toROSMsg(point_cloud, cloud);
       cloud.header.frame_id = world_frame_;
       cloud.header.stamp = ros::Time::now();
-      pcl_pub_.publish(cloud);
+      nearest_obstacle_pub_.publish(cloud);
     }
   }
 }

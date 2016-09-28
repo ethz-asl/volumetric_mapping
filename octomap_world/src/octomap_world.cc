@@ -408,6 +408,49 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                         octree_->getClampingThresMaxLog());
 }
 
+void OctomapWorld::getOccupiedPointCloud(
+    pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
+  CHECK_NOTNULL(output_cloud)->clear();
+  unsigned int max_tree_depth = octree_->getTreeDepth();
+  double resolution = octree_->getResolution();
+  for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs();
+       it != octree_->end_leafs(); ++it) {
+    if (octree_->isNodeOccupied(*it)) {
+      // If leaf is max depth add coordinates.
+      if (max_tree_depth == it.getDepth()) {
+        pcl::PointXYZ point(it.getX(), it.getY(), it.getZ());
+        output_cloud->push_back(point);
+      }
+      // If leaf is not max depth it represents an occupied voxel with edge
+      // length of 2^(max_tree_depth - leaf_depth) * resolution.
+      // We use multiple points to visualize this filled volume.
+      else {
+        const unsigned int box_edge_length =
+            pow(2,max_tree_depth - it.getDepth() - 1);
+        const double bbx_offset = box_edge_length * resolution - resolution/2;
+        Eigen::Vector3d bbx_offset_vec(bbx_offset, bbx_offset, bbx_offset);
+        Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
+        Eigen::Vector3d bbx_min = center - bbx_offset_vec;
+        Eigen::Vector3d bbx_max = center + bbx_offset_vec;
+        // Add small offset to avoid overshooting bbx_max.
+        bbx_max += Eigen::Vector3d(0.001, 0.001, 0.001);
+        for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
+             x_position += resolution) {
+          for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+               y_position += resolution) {
+            for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
+                 z_position += resolution) {
+              output_cloud->push_back(pcl::PointXYZ(x_position,
+                                                    y_position,
+                                                    z_position));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 void OctomapWorld::getOccupiedPointcloudInBoundingBox(
     const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
     pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
