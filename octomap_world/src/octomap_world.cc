@@ -432,6 +432,8 @@ void OctomapWorld::getOccupiedPointCloud(
         Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
         Eigen::Vector3d bbx_min = center - bbx_offset_vec;
         Eigen::Vector3d bbx_max = center + bbx_offset_vec;
+        // Add small offset to avoid overshooting bbx_max.
+        bbx_max += Eigen::Vector3d(0.001, 0.001, 0.001);
         for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
              x_position += resolution) {
           for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
