@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_xml.h>
+#include <pcl/io/pcd_io.h>
 
 namespace volumetric_mapping {
 
@@ -202,6 +203,8 @@ void OctomapManager::advertiseServices() {
       "save_map", &OctomapManager::saveOctomapCallback, this);
   load_octree_service_ = nh_private_.advertiseService(
       "load_map", &OctomapManager::loadOctomapCallback, this);
+  save_point_cloud_service_ = nh_private_.advertiseService(
+      "save_point_cloud", &OctomapManager::savePointCloudCallback, this);
   set_box_occupancy_service_ = nh_private_.advertiseService(
       "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
   set_display_bounds_service_ = nh_private_.advertiseService(
@@ -309,6 +312,15 @@ bool OctomapManager::saveOctomapCallback(
     volumetric_msgs::SaveMap::Request& request,
     volumetric_msgs::SaveMap::Response& response) {
   return writeOctomapToFile(request.file_path);
+}
+
+bool OctomapManager::savePointCloudCallback(
+    volumetric_msgs::SaveMap::Request& request,
+    volumetric_msgs::SaveMap::Response& response) {
+  pcl::PointCloud<pcl::PointXYZ> point_cloud;
+  getOccupiedPointCloud(&point_cloud);
+  pcl::io::savePCDFileASCII(request.file_path, point_cloud);
+  return true;
 }
 
 bool OctomapManager::setBoxOccupancyCallback(

@@ -84,6 +84,8 @@ class OctomapManager : public OctomapWorld {
                            volumetric_msgs::LoadMap::Response& response);
   bool saveOctomapCallback(volumetric_msgs::SaveMap::Request& request,
                            volumetric_msgs::SaveMap::Response& response);
+  bool savePointCloudCallback(volumetric_msgs::SaveMap::Request& request,
+                              volumetric_msgs::SaveMap::Response& response);
 
   bool setBoxOccupancyCallback(
       volumetric_msgs::SetBoxOccupancy::Request& request,
@@ -162,6 +164,7 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer get_map_service_;
   ros::ServiceServer save_octree_service_;
   ros::ServiceServer load_octree_service_;
+  ros::ServiceServer save_point_cloud_service_;
   ros::ServiceServer set_box_occupancy_service_;
   ros::ServiceServer set_display_bounds_service_;
 
