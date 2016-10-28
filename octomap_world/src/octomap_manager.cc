@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_xml.h>
-#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
 
 namespace volumetric_mapping {
 
@@ -319,7 +319,7 @@ bool OctomapManager::savePointCloudCallback(
     volumetric_msgs::SaveMap::Response& response) {
   pcl::PointCloud<pcl::PointXYZ> point_cloud;
   getOccupiedPointCloud(&point_cloud);
-  pcl::io::savePCDFileASCII(request.file_path, point_cloud);
+  pcl::io::savePLYFileASCII(request.file_path, point_cloud);
   return true;
 }
 
