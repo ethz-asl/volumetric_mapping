@@ -165,7 +165,11 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
     // Cast a ray to compute all the free cells.
     octomap::KeyRay key_ray;
     if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
-      free_cells->insert(key_ray.begin(), key_ray.end());
+      for (const auto& key: key_ray) {
+        if ((octree_->keyToCoord(key) - sensor_origin).norm() < params_.max_free_space) {
+          free_cells->insert(key);
+        }
+      }
     }
     // Mark endpoing as occupied.
     octomap::OcTreeKey key;
