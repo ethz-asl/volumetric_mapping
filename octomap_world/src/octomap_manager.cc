@@ -88,6 +88,8 @@ void OctomapManager::setParametersFromROS() {
                     params.filter_speckles);
   nh_private_.param("max_free_space", params.max_free_space,
                     params.max_free_space);
+  nh_private_.param("min_height_free_space", params.min_height_free_space,
+                    params.min_height_free_space);
   nh_private_.param("sensor_max_range", params.sensor_max_range,
                     params.sensor_max_range);
   nh_private_.param("visualize_min_z", params.visualize_min_z,

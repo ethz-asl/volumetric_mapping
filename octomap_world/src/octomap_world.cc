@@ -166,7 +166,9 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
     octomap::KeyRay key_ray;
     if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
       for (const auto& key: key_ray) {
-        if ((octree_->keyToCoord(key) - sensor_origin).norm() < params_.max_free_space) {
+	    octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
+        if ((voxel_coordinate - sensor_origin).norm() < params_.max_free_space ||
+	        voxel_coordinate.z() > (sensor_origin.z() - params_.min_height_free_space)) {
           free_cells->insert(key);
         }
       }
@@ -183,7 +185,13 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
         (point - sensor_origin).normalized() * params_.sensor_max_range;
     octomap::KeyRay key_ray;
     if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
-      free_cells->insert(key_ray.begin(), key_ray.end());
+      for (const auto& key: key_ray) {
+	    octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
+        if ((voxel_coordinate - sensor_origin).norm() < params_.max_free_space ||
+	        voxel_coordinate.z() > (sensor_origin.z() - params_.min_height_free_space)) {
+          free_cells->insert(key);
+        }
+      }
     }
   }
 }

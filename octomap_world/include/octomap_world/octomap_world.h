@@ -50,6 +50,7 @@ struct OctomapParameters {
         threshold_occupancy(0.7),
         filter_speckles(true),
         max_free_space(5.0),
+        min_height_free_space(0.0),
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
@@ -76,6 +77,9 @@ struct OctomapParameters {
 
   // Maximum range to allow a free space update.
   double max_free_space;
+  
+  // Minimum height below sensor to allow a free space update.
+  double min_height_free_space;
 
   // Maximum range to allow a sensor measurement. Negative values to not
   // filter.
