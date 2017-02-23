@@ -37,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
 #include <pcl/conversions.h>
-#include <Eigen/StdVector>
 
 #include "volumetric_map_base/point_weighing.h"
 
