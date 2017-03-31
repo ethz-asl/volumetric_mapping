@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2011, Markus Achtelik, ASL, ETH Zurich, Switzerland
-You can contact the author at <markus dot achtelik at mavt dot ethz dot ch>
+Copyright (c) 2015, Helen Oleynikova, ETH Zurich, Switzerland
+You can contact the author at <helen dot oleynikova at mavt dot ethz dot ch>
 
 All rights reserved.
 
@@ -488,6 +488,38 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
               pcl::PointXYZ(point.x(), point.y(), point.z()));
         }
       }
+    }
+  }
+}
+
+void OctomapWorld::getAllFreeBoxes(
+    std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const {
+  const bool occupied_boxes = false;
+  getAllBoxes(occupied_boxes, free_box_vector);
+}
+
+void OctomapWorld::getAllOccupiedBoxes(
+    std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector)
+    const {
+  const bool occupied_boxes = true;
+  getAllBoxes(occupied_boxes, occupied_box_vector);
+}
+
+void OctomapWorld::getAllBoxes(
+    bool occupied_boxes,
+    std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const {
+  box_vector->clear();
+  for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs(),
+                                      end = octree_->end_leafs();
+       it != end; ++it) {
+    Eigen::Vector3d cube_center(it.getX(), it.getY(), it.getZ());
+    int depth_level = it.getDepth();
+    double cube_size = octree_->getNodeSize(depth_level);
+
+    if (octree_->isNodeOccupied(*it) && occupied_boxes) {
+      box_vector->emplace_back(cube_center, cube_size);
+    } else if (!octree_->isNodeOccupied(*it) && !occupied_boxes) {
+      box_vector->emplace_back(cube_center, cube_size);
     }
   }
 }
