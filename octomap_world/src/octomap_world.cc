@@ -509,6 +509,7 @@ void OctomapWorld::getAllBoxes(
     bool occupied_boxes,
     std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const {
   box_vector->clear();
+  box_vector->reserve(octree_->size());
   for (octomap::OcTree::leaf_iterator it = octree_->begin_leafs(),
                                       end = octree_->end_leafs();
        it != end; ++it) {
