@@ -139,6 +139,13 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
       pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
 
+  // Structure: vector of pairs, key is the cube center and double is the
+  // dimension of each side.
+  void getAllFreeBoxes(
+      std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const;
+  void getAllOccupiedBoxes(std::vector<std::pair<Eigen::Vector3d, double> >*
+                               occupied_box_vector) const;
+
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
   virtual Eigen::Vector3d getMapSize() const;
@@ -198,6 +205,10 @@ class OctomapWorld : public WorldBase {
   void setLogOddsBoundingBox(const Eigen::Vector3d& position,
                              const Eigen::Vector3d& bounding_box_size,
                              double log_odds_value);
+
+  void getAllBoxes(
+      bool occupied_boxes,
+      std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const;
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
