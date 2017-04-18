@@ -49,7 +49,7 @@ struct OctomapParameters {
         threshold_max(0.97),
         threshold_occupancy(0.7),
         filter_speckles(true),
-        max_free_space(5.0),
+        max_free_space(0.0),
         min_height_free_space(0.0),
         sensor_max_range(5.0),
         visualize_min_z(-std::numeric_limits<double>::max()),
