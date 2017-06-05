@@ -160,8 +160,7 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
       std::vector<octomap::OcTreeKey>* free_key_vector) const;
   void getOccupiedKeysBoundingBox(
-      const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size,
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
       std::vector<octomap::OcTreeKey>* occupied_key_vector) const;
 
   virtual double getResolution() const;
@@ -230,10 +229,9 @@ class OctomapWorld : public WorldBase {
   void getAllBoxes(
       bool occupied_boxes,
       std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const;
-  void getKeysBoundingBox(
-      bool occupied_boxes, const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size,
-      std::vector<octomap::OcTreeKey>* box_vector) const;
+  void getKeysBoundingBox(bool occupied_boxes, const Eigen::Vector3d& position,
+                          const Eigen::Vector3d& bounding_box_size,
+                          std::vector<octomap::OcTreeKey>* box_vector) const;
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,

@@ -561,16 +561,15 @@ void OctomapWorld::getFreeKeysBoundingBox(
     std::vector<octomap::OcTreeKey>* free_key_vector) const {
   const bool occupied_boxes = false;
   getKeysBoundingBox(occupied_boxes, position, bounding_box_size,
-                      free_key_vector);
+                     free_key_vector);
 }
 
 void OctomapWorld::getOccupiedKeysBoundingBox(
-    const Eigen::Vector3d& position,
-    const Eigen::Vector3d& bounding_box_size,
+    const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
     std::vector<octomap::OcTreeKey>* occupied_key_vector) const {
   const bool occupied_boxes = true;
   getKeysBoundingBox(occupied_boxes, position, bounding_box_size,
-                         occupied_key_vector);
+                     occupied_key_vector);
 }
 
 void OctomapWorld::getKeysBoundingBox(
@@ -587,11 +586,11 @@ void OctomapWorld::getKeysBoundingBox(
   Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
   Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
 
-  octomap::point3d min_point(bbx_min.x(),bbx_min.y(),bbx_min.z());
-  octomap::point3d max_point(bbx_max.x(),bbx_max.y(),bbx_max.z());
+  octomap::point3d min_point(bbx_min.x(), bbx_min.y(), bbx_min.z());
+  octomap::point3d max_point(bbx_max.x(), bbx_max.y(), bbx_max.z());
 
-  for (octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(min_point, max_point), end = octree_
-      ->end_leafs_bbx(); it != end; ++it) {
+  for (octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(
+      min_point, max_point), end = octree_->end_leafs_bbx(); it != end; ++it) {
     octomap::OcTreeKey key = it.getKey();
 
     if (octree_->isNodeOccupied(*it) && occupied_boxes) {
