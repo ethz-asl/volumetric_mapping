@@ -551,9 +551,22 @@ void OctomapWorld::getAllBoxes(
 
 void OctomapWorld::getBox(const octomap::OcTreeKey& key,
                           std::pair<Eigen::Vector3d, double>* box) const {
-  octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(key, key);
-  box->first = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
-  box->second = it.getSize();
+//  octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(key, key);
+//  box->first = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+//  box->second = it.getSize();
+//  std::cout << "**********\n";
+//  std::cout << "Key is " << key.k[0] << ", " << key.k[1] << ", " << key.k[2] << "\n";
+  for (octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(key,
+                                                                        key),
+      end = octree_->end_leafs_bbx(); it != end; ++it) {
+    box->first = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+    box->second = it.getSize();
+//    octomap::OcTreeKey key2 = it.getKey();
+//    std::cout << "getKey gives " << key2.k[0] << ", " << key2.k[1] << ", " << key2.k[2];
+//    std::cout << " with center " << box->first.transpose() << " and size " << box->second << "\n";
+  }
+//  std::cout << "---------\n";
+
 }
 
 void OctomapWorld::getFreeKeysBoundingBox(
@@ -583,15 +596,34 @@ void OctomapWorld::getKeysBoundingBox(
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
+//  std::cout << "\nbbx position is " << position.transpose() << " and size is " << bounding_box_size.transpose() << "\n";
+
   Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
   Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
 
   octomap::point3d min_point(bbx_min.x(), bbx_min.y(), bbx_min.z());
   octomap::point3d max_point(bbx_max.x(), bbx_max.y(), bbx_max.z());
 
+  std::cout << "\nbbx_min is " << bbx_min.transpose() << " and bbx_max is " << bbx_max.transpose() << "\n";
+
   for (octomap::OcTree::leaf_bbx_iterator it = octree_->begin_leafs_bbx(
       min_point, max_point), end = octree_->end_leafs_bbx(); it != end; ++it) {
-    octomap::OcTreeKey key = it.getKey();
+    octomap::OcTreeKey key = it.getIndexKey();
+    std::cout << "Key is " << key.k[0] << ", " << key.k[1] << ", " << key.k[2] << "\n";
+    octomap::point3d center = octree_->keyToCoord(key);
+    std::cout << "center is " << center.x() << ", " << center.y() << ", " << center.z() << " and size " << it.getSize() << "\n";
+//    std::cout << "Key was          " << key.k[0] << ", " << key.k[1] << ", " << key.k[2] << "\n";
+//    key = it.getIndexKey();
+    //std::cout << "index_key was    " << index_key.k[0] << ", " << index_key.k[1] << ", " << index_key.k[2] << "\n";
+//    octomap::point3d center = octree_->keyToCoord(key);
+//    int depth = it.getDepth();
+//    key = octree_->coordToKey(center, depth);
+//    std::cout << "coordToKey gives " << key.k[0] << ", " << key.k[1] << ", " << key.k[2] << " with depth " << depth << "\n";
+//    key = octree_->coordToKey(center, depth-1);
+//    std::cout << "coordToKey gives " << key.k[0] << ", " << key.k[1] << ", " << key.k[2] << " with depth " << depth-1 << "\n";
+//    std::cout << "coordToKey gives  " << center.x() << ", " << center.y() << ", " << center.z() << "\n";
+//    center = it.getCoordinate();
+//    std::cout << "getCoordin gives  " << center.x() << ", " << center.y() << ", " << center.z() << "\n\n";
 
     if (octree_->isNodeOccupied(*it) && occupied_boxes) {
       key_vector->emplace_back(key);
