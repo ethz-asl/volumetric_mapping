@@ -156,22 +156,24 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
                            const octomap::point3d& point,
                            octomap::KeySet* free_cells,
-                           octomap::KeySet* occupied_cells) const {
+                           octomap::KeySet* occupied_cells) {
   CHECK_NOTNULL(free_cells);
   CHECK_NOTNULL(occupied_cells);
 
   if (params_.sensor_max_range < 0.0 ||
       (point - sensor_origin).norm() <= params_.sensor_max_range) {
     // Cast a ray to compute all the free cells.
-    octomap::KeyRay key_ray;
-    if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
+    key_ray_.reset();
+    if (octree_->computeRayKeys(sensor_origin, point, key_ray_)) {
       if (params_.max_free_space == 0.0) {
-        free_cells->insert(key_ray.begin(), key_ray.end());
+        free_cells->insert(key_ray_.begin(), key_ray_.end());
       } else {
-        for (const auto& key: key_ray) {
+        for (const auto& key : key_ray_) {
           octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
-          if ((voxel_coordinate - sensor_origin).norm() < params_.max_free_space ||
-              voxel_coordinate.z() > (sensor_origin.z() - params_.min_height_free_space)) {
+          if ((voxel_coordinate - sensor_origin).norm() <
+                  params_.max_free_space ||
+              voxel_coordinate.z() >
+                  (sensor_origin.z() - params_.min_height_free_space)) {
             free_cells->insert(key);
           }
         }
@@ -187,15 +189,17 @@ void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
     octomap::point3d new_end =
         sensor_origin +
         (point - sensor_origin).normalized() * params_.sensor_max_range;
-    octomap::KeyRay key_ray;
-    if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
+    key_ray_.reset();
+    if (octree_->computeRayKeys(sensor_origin, new_end, key_ray_)) {
       if (params_.max_free_space == 0.0) {
-        free_cells->insert(key_ray.begin(), key_ray.end());
+        free_cells->insert(key_ray_.begin(), key_ray_.end());
       } else {
-        for (const auto& key: key_ray) {
+        for (const auto& key : key_ray_) {
           octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
-          if ((voxel_coordinate - sensor_origin).norm() < params_.max_free_space ||
-              voxel_coordinate.z() > (sensor_origin.z() - params_.min_height_free_space)) {
+          if ((voxel_coordinate - sensor_origin).norm() <
+                  params_.max_free_space ||
+              voxel_coordinate.z() >
+                  (sensor_origin.z() - params_.min_height_free_space)) {
             free_cells->insert(key);
           }
         }
@@ -323,8 +327,8 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
     const Eigen::Vector3d& start, const Eigen::Vector3d& end) const {
   // Get all node keys for this line.
   // This is actually a typedef for a vector of OcTreeKeys.
+  // Can't use the key_ray_ temp member here because this is a const function.
   octomap::KeyRay key_ray;
-
   octree_->computeRayKeys(pointEigenToOctomap(start), pointEigenToOctomap(end),
                           key_ray);
 
@@ -345,6 +349,7 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
     bool stop_at_unknown_cell) const {
   // Get all node keys for this line.
   // This is actually a typedef for a vector of OcTreeKeys.
+  // Can't use the key_ray_ temp member here because this is a const function.
   octomap::KeyRay key_ray;
 
   octree_->computeRayKeys(pointEigenToOctomap(view_point),
@@ -446,8 +451,8 @@ void OctomapWorld::getOccupiedPointCloud(
       // We use multiple points to visualize this filled volume.
       else {
         const unsigned int box_edge_length =
-            pow(2,max_tree_depth - it.getDepth() - 1);
-        const double bbx_offset = box_edge_length * resolution - resolution/2;
+            pow(2, max_tree_depth - it.getDepth() - 1);
+        const double bbx_offset = box_edge_length * resolution - resolution / 2;
         Eigen::Vector3d bbx_offset_vec(bbx_offset, bbx_offset, bbx_offset);
         Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
         Eigen::Vector3d bbx_min = center - bbx_offset_vec;
@@ -460,9 +465,8 @@ void OctomapWorld::getOccupiedPointCloud(
                y_position += resolution) {
             for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
                  z_position += resolution) {
-              output_cloud->push_back(pcl::PointXYZ(x_position,
-                                                    y_position,
-                                                    z_position));
+              output_cloud->push_back(
+                  pcl::PointXYZ(x_position, y_position, z_position));
             }
           }
         }
