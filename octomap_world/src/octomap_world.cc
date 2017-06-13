@@ -968,13 +968,13 @@ void OctomapWorld::getChangedPoints(
 }
 
 void OctomapWorld::coordToKey(const Eigen::Vector3d& coord,
-                              octomap::OcTreeKey* key) {
+                              octomap::OcTreeKey* key) const {
   octomap::point3d position(coord.x(), coord.y(), coord.z());
   *key = octree_->coordToKey(position);
 }
 
 void OctomapWorld::keyToCoord(const octomap::OcTreeKey& key,
-                              Eigen::Vector3d* coord) {
+                              Eigen::Vector3d* coord) const {
   octomap::point3d position;
   position = octree_->keyToCoord(key);
   *coord << position.x(), position.y(), position.z();
