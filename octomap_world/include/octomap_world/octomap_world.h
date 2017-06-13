@@ -237,7 +237,7 @@ class OctomapWorld : public WorldBase {
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
                const octomap::point3d& point, octomap::KeySet* free_cells,
-               octomap::KeySet* occupied_cells) const;
+               octomap::KeySet* occupied_cells);
   void updateOccupancy(octomap::KeySet* free_cells,
                        octomap::KeySet* occupied_cells);
   bool isValidPoint(const cv::Vec3f& point) const;
@@ -258,6 +258,10 @@ class OctomapWorld : public WorldBase {
 
   // For collision checking.
   Eigen::Vector3d robot_size_;
+
+  // Temporary variable for KeyRay since it resizes it to a HUGE value by
+  // default. Thanks a lot to @xiaopenghuang for catching this.
+  octomap::KeyRay key_ray_;
 };
 
 }  // namespace volumetric_mapping
