@@ -111,8 +111,7 @@ class OctomapWorld : public WorldBase {
 
   // Creates an octomap with the correct parameters.
   OctomapWorld(const OctomapParameters& params);
-  virtual ~OctomapWorld() {
-  }
+  virtual ~OctomapWorld() {}
 
   // General map management.
   void resetMap();
@@ -152,17 +151,17 @@ class OctomapWorld : public WorldBase {
   // dimension of each side.
   void getAllFreeBoxes(
       std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const;
-  void getAllOccupiedBoxes(
-      std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector) const;
+  void getAllOccupiedBoxes(std::vector<std::pair<Eigen::Vector3d, double> >*
+                               occupied_box_vector) const;
   void getBox(const octomap::OcTreeKey& key,
               std::pair<Eigen::Vector3d, double>* box) const;
   void getFreeBoxesBoundingBox(
       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
       std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const;
   void getOccupiedBoxesBoundingBox(
-      const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size,
-      std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector) const;
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+      std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector)
+      const;
 
   virtual double getResolution() const;
   virtual Eigen::Vector3d getMapCenter() const;
@@ -227,14 +226,13 @@ class OctomapWorld : public WorldBase {
                              const Eigen::Vector3d& bounding_box_size,
                              double log_odds_value);
 
-  void getAllBoxes(
-      bool occupied_boxes,
-      std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const;
-  void getBoxesBoundingBox(
-      bool occupied_boxes,
-      const Eigen::Vector3d& position,
-      const Eigen::Vector3d& bounding_box_size,
-      std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector) const;
+  void getAllBoxes(bool occupied_boxes,
+                   std::vector<std::pair<Eigen::Vector3d, double> >* box_vector)
+      const;
+  void getBoxesBoundingBox(bool occupied_boxes, const Eigen::Vector3d& position,
+                           const Eigen::Vector3d& bounding_box_size,
+                           std::vector<std::pair<Eigen::Vector3d, double> >*
+                               occupied_box_vector) const;
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
