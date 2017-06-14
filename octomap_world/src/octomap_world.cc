@@ -582,7 +582,12 @@ void OctomapWorld::getBoxesBoundingBox(
     const Eigen::Vector3d& bounding_box_size,
     std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const {
   box_vector->clear();
-  box_vector->reserve(octree_->size());
+  const Eigen::Vector3d max_boxes =
+      bounding_box_size / octree_->getResolution();
+  const int max_vector_size = std::ceil(max_boxes.x()) *
+                              std::ceil(max_boxes.y()) *
+                              std::ceil(max_boxes.z());
+  box_vector->reserve(max_vector_size);
 
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
   Eigen::Vector3d epsilon_3d;
