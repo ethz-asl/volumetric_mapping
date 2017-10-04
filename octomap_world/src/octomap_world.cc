@@ -272,6 +272,25 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
            iter = octree_->begin_leafs_bbx(bbx_min, bbx_max),
            end = octree_->end_leafs_bbx();
        iter != end; ++iter) {
+    Eigen::Vector3d cube_center(iter.getX(), iter.getY(), iter.getZ());
+    int depth_level = iter.getDepth();
+    double cube_size = octree_->getNodeSize(depth_level);
+
+    // Check if it is really inside bounding box, since leaf_bbx_iterator begins
+    // "too early"
+    Eigen::Vector3d cube_lower_bound =
+        cube_center - (cube_size / 2) * Eigen::Vector3d::Ones();
+    Eigen::Vector3d cube_upper_bound =
+        cube_center + (cube_size / 2) * Eigen::Vector3d::Ones();
+    if (cube_upper_bound.x() < bbx_min.x() ||
+        cube_lower_bound.x() > bbx_max.x() ||
+        cube_upper_bound.y() < bbx_min.y() ||
+        cube_lower_bound.y() > bbx_max.y() ||
+        cube_upper_bound.z() < bbx_min.z() ||
+        cube_lower_bound.z() > bbx_max.z()) {
+      continue;
+    }
+
     if (octree_->isNodeOccupied(*iter)) {
       if (params_.filter_speckles && isSpeckleNode(iter.getKey())) {
         continue;
