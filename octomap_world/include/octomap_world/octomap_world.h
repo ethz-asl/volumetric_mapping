@@ -195,6 +195,9 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
+  // Inflation of all obstacles
+  void inflateOccupied(const Eigen::Vector3d& inflate_size);
+
   // Change detection -- when this is called, this resets the change detection
   // tracking within the map. So 2 consecutive calls will produce first the
   // change set, then nothing.
