@@ -822,7 +822,7 @@ void OctomapWorld::generateMarkerArray(
   }
 }
 
-void inflateOccupied(const Eigen::Vector3d& inflate_size) {
+void OctomapWorld::inflateOccupied(const Eigen::Vector3d& inflate_size) {
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
@@ -830,8 +830,9 @@ void inflateOccupied(const Eigen::Vector3d& inflate_size) {
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
-  const std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
-  octree_->getAllOccupiedBoxes(&box_vector);
+  std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
+  getAllOccupiedBoxes(&box_vector);
+
   for (const std::pair<Eigen::Vector3d, double>& box : box_vector) {
     Eigen::Vector3d bounding_box_size =
         Eigen::Vector3d::Constant(box.second) + inflate_size;
@@ -844,15 +845,17 @@ void inflateOccupied(const Eigen::Vector3d& inflate_size) {
            y_position += resolution) {
         for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
              z_position += resolution) {
+          // TODO(Sebastian) check if it is inside the map?
           octomap::point3d point =
               octomap::point3d(x_position, y_position, z_position);
           octree_->setNodeValue(point, log_odds_value, lazy_eval);
         }
       }
     }
-    octree_->updateInnerOccupancy();
-    octree_->prune();
   }
+  // This is necessary since lazy_eval is set to true.
+  octree_->updateInnerOccupancy();
+  octree_->prune();
 }
 
 double OctomapWorld::colorizeMapByHeight(double z, double min_z,
