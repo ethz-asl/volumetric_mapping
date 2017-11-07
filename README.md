@@ -14,12 +14,27 @@ In addition to `ros-indigo-desktop-full`, please install:
 sudo apt-get install ros-indigo-octomap-mapping
 ```
 
-And the following packages:
-[minkindr](https://github.com/ethz-asl/minkindr)
-[minkindr_ros](https://github.com/ethz-asl/minkindr_ros)
-[eigen_catkin](https://github.com/ethz-asl/eigen_catkin)
-[glog_catkin](https://github.com/ethz-asl/glog_catkin)
-[gflags_catkin](https://github.com/ethz-asl/gflags_catkin)
+And the following packages, which can be done all at once with the script below:  
+[minkindr](https://github.com/ethz-asl/minkindr)  
+[minkindr_ros](https://github.com/ethz-asl/minkindr_ros)  
+[eigen_catkin](https://github.com/ethz-asl/eigen_catkin)  
+[eigen_checks](https://github.com/ethz-asl/eigen_checks)  
+[glog_catkin](https://github.com/ethz-asl/glog_catkin)  
+[gflags_catkin](https://github.com/ethz-asl/gflags_catkin)  
+
+```
+cd ~/catkin_ws/src/
+wstool init
+wstool set catkin_simple       --git https://github.com/catkin/catkin_simple.git
+wstool set eigen_catkin        --git https://github.com/ethz-asl/eigen_catkin.git
+wstool set eigen_checks        --git https://github.com/ethz-asl/eigen_checks.git
+wstool set gflags_catkin       --git https://github.com/ethz-asl/gflags_catkin.git
+wstool set glog_catkin         --git https://github.com/ethz-asl/glog_catkin.git
+wstool set minkindr            --git https://github.com/ethz-asl/minkindr.git
+wstool set minkindr_ros        --git https://github.com/ethz-asl/minkindr_ros.git
+wstool set volumetric_mapping  --git https://github.com/ethz-asl/volumetric_mapping.git
+wstool update
+```
 
 On Mac OS X, see the [mav_tools Wiki instructions](https://github.com/ethz-asl/mav_tools/wiki/Install-the-ASL-MAV-framework#install-extra-stock-ros-packages-octomap-ompl-etc).
 
