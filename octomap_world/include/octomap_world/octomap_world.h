@@ -198,7 +198,7 @@ class OctomapWorld : public WorldBase {
 
   // Inflation of all obstacles to take robot_size_ into account
   void inflateOccupied();
-  void unfeasiblePointsInBox(const std::pair<Eigen::Vector3d, double>& box,
+  void infeasiblePointsInBox(const std::pair<Eigen::Vector3d, double>& box,
                              std::queue<octomap::point3d>* occupied_points);
 
   // Change detection -- when this is called, this resets the change detection
@@ -268,6 +268,17 @@ class OctomapWorld : public WorldBase {
   // Temporary variable for KeyRay since it resizes it to a HUGE value by
   // default. Thanks a lot to @xiaopenghuang for catching this.
   octomap::KeyRay key_ray_;
+
+  // Timing variables
+  double time_case1pos;
+  double time_case1neg;
+  double time_case2pos;
+  double time_case2neg;
+  double time_case3pos;
+  double time_case3neg;
+  int case1;
+  int case2;
+  int case3;
 };
 
 }  // namespace volumetric_mapping
