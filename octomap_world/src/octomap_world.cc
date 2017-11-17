@@ -830,29 +830,45 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& inflate_size) {
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
+  // params_.treat_unknown_as_occupied = false;
+
   std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
-  getAllOccupiedBoxes(&box_vector);
+  getAllFreeBoxes(&box_vector);
+
+  std::queue<octomap::point3d> occupied_points;
+  Eigen::Vector3d actual_position;
 
   for (const std::pair<Eigen::Vector3d, double>& box : box_vector) {
-    Eigen::Vector3d bounding_box_size =
-        Eigen::Vector3d::Constant(box.second) + inflate_size;
-    Eigen::Vector3d bbx_min = box.first - bounding_box_size / 2 - epsilon_3d;
-    Eigen::Vector3d bbx_max = box.first + bounding_box_size / 2 + epsilon_3d;
-
+    Eigen::Vector3d bbx_min =
+        box.first - Eigen::Vector3d::Constant((box.second - resolution) / 2);
+    Eigen::Vector3d bbx_max =
+        box.first + Eigen::Vector3d::Constant(box.second / 2 - epsilon);
     for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
          x_position += resolution) {
       for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
            y_position += resolution) {
         for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
              z_position += resolution) {
-          // TODO(Sebastian) check if it is inside the map?
-          octomap::point3d point =
-              octomap::point3d(x_position, y_position, z_position);
-          octree_->setNodeValue(point, log_odds_value, lazy_eval);
+          actual_position << x_position, y_position, z_position;
+          if (getCellStatusBoundingBox(
+                  actual_position, inflate_size + Eigen::Vector3d::Constant(
+                                                      resolution)) != kFree) {
+            occupied_points.push(
+                octomap::point3d(x_position, y_position, z_position));
+          }
         }
       }
     }
   }
+
+  std::cout << "free_box_vector had size " << box_vector.size() << "\n";
+  std::cout << "Now evaluate all occupied_points in queue\n";
+  while (!occupied_points.empty()) {
+    octree_->setNodeValue(occupied_points.front(), log_odds_value, lazy_eval);
+    occupied_points.pop();
+  }
+  // params_.treat_unknown_as_occupied = false;
+
   // This is necessary since lazy_eval is set to true.
   octree_->updateInnerOccupancy();
   octree_->prune();
