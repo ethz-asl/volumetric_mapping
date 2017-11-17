@@ -196,8 +196,10 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
-  // Inflation of all obstacles
-  void inflateOccupied(const Eigen::Vector3d& inflate_size);
+  // Inflation of all obstacles to take robot_size_ into account
+  void inflateOccupied();
+  void unfeasiblePointsInBox(const std::pair<Eigen::Vector3d, double>& box,
+                             std::queue<octomap::point3d>* occupied_points);
 
   // Change detection -- when this is called, this resets the change detection
   // tracking within the map. So 2 consecutive calls will produce first the

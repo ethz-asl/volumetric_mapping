@@ -822,56 +822,104 @@ void OctomapWorld::generateMarkerArray(
   }
 }
 
-void OctomapWorld::inflateOccupied(const Eigen::Vector3d& inflate_size) {
+void OctomapWorld::inflateOccupied() {
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
-  const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
-
-  // params_.treat_unknown_as_occupied = false;
 
   std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
   getAllFreeBoxes(&box_vector);
 
   std::queue<octomap::point3d> occupied_points;
-  Eigen::Vector3d actual_position;
 
   for (const std::pair<Eigen::Vector3d, double>& box : box_vector) {
-    Eigen::Vector3d bbx_min =
-        box.first - Eigen::Vector3d::Constant((box.second - resolution) / 2);
-    Eigen::Vector3d bbx_max =
-        box.first + Eigen::Vector3d::Constant(box.second / 2 - epsilon);
-    for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
-         x_position += resolution) {
-      for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-           y_position += resolution) {
-        for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
-             z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          if (getCellStatusBoundingBox(
-                  actual_position, inflate_size + Eigen::Vector3d::Constant(
-                                                      resolution)) != kFree) {
-            occupied_points.push(
-                octomap::point3d(x_position, y_position, z_position));
-          }
-        }
-      }
-    }
+    unfeasiblePointsInBox(box, &occupied_points);
   }
 
-  std::cout << "free_box_vector had size " << box_vector.size() << "\n";
-  std::cout << "Now evaluate all occupied_points in queue\n";
+  // std::cout << "free_box_vector had size " << box_vector.size() << "\n";
+  // std::cout << "Now evaluate all " << occupied_points.size() << "
+  // occupied_points in queue\n";
   while (!occupied_points.empty()) {
     octree_->setNodeValue(occupied_points.front(), log_odds_value, lazy_eval);
     occupied_points.pop();
   }
-  // params_.treat_unknown_as_occupied = false;
 
   // This is necessary since lazy_eval is set to true.
   octree_->updateInnerOccupancy();
   octree_->prune();
+}
+
+void OctomapWorld::unfeasiblePointsInBox(
+    const std::pair<Eigen::Vector3d, double>& box,
+    std::queue<octomap::point3d>* occupied_points) {
+  const double epsilon = 1e-6;  // Small offset to not hit boundary of nodes
+  Eigen::Vector3d epsilon_3d = Eigen::Vector3d::Constant(epsilon);
+  const double resolution = octree_->getResolution();
+
+  // In case the whole box is feasible, no occupied point has to be added
+  if (getCellStatusBoundingBox(
+          box.first, robot_size_ + Eigen::Vector3d::Constant(box.second)) ==
+      kFree) {
+    return;
+  }
+  // In case the box has resolution size and is not feasible
+  if (box.second - epsilon < resolution) {
+    occupied_points->push(pointEigenToOctomap(box.first));
+    return;
+  }
+  // // Make box infeasible if it is small and still not completely feasible (it's a simplification to have better computation time, but it's not right to do so!)
+  // if (box.second - epsilon < 2 * resolution) {
+  //   Eigen::Vector3d bbx_min = box.first - Eigen::Vector3d::Constant(box.second - resolution) / 2;
+  //   Eigen::Vector3d bbx_max = box.first + Eigen::Vector3d::Constant(box.second - resolution) / 2;
+  //   for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
+  //        x_position += resolution) {
+  //     for (double y_position = bbx_min.y(); y_position <= bbx_max.y() + epsilon;
+  //          y_position += resolution) {
+  //       for (double z_position = bbx_min.z(); z_position <= bbx_max.z() + epsilon;
+  //            z_position += resolution) {
+  //         occupied_points->push(octomap::point3d(x_position, y_position, z_position));
+  //       }
+  //     }
+  //   }
+  //   return;
+  // }
+  // In case the whole box can't be feasible (bounding box of robot_size_ around
+  // a point on one bound of the box hits obstacle on the other side)
+  if (getCellStatusBoundingBox(
+          box.first, Eigen::Vector3d::Constant(resolution-epsilon).cwiseMax(
+                         robot_size_ / 2 -
+                         Eigen::Vector3d::Constant(box.second))) == kOccupied) {
+
+    Eigen::Vector3d bbx_min = box.first - Eigen::Vector3d::Constant(box.second - resolution) / 2;
+    Eigen::Vector3d bbx_max = box.first + Eigen::Vector3d::Constant(box.second - resolution) / 2;
+    for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
+         x_position += resolution) {
+      for (double y_position = bbx_min.y(); y_position <= bbx_max.y() + epsilon;
+           y_position += resolution) {
+        for (double z_position = bbx_min.z(); z_position <= bbx_max.z() + epsilon;
+             z_position += resolution) {
+          occupied_points->push(octomap::point3d(x_position, y_position, z_position));
+        }
+      }
+    }
+    return;
+  }
+  // Otherwise split box into 8 and find unfeasiblePointsInBox for each of them
+  Eigen::Vector3d direction;
+  for (int sign_x = -1; sign_x <= 1; sign_x += 2) {
+    for (int sign_y = -1; sign_y <= 1; sign_y += 2) {
+      for (int sign_z = -1; sign_z <= 1; sign_z += 2) {
+        direction << sign_x, sign_y, sign_z;
+        unfeasiblePointsInBox(
+            std::make_pair(box.first + direction * box.second / 4,
+                           box.second / 2),
+            occupied_points);
+      }
+    }
+  }
+  return;
 }
 
 double OctomapWorld::colorizeMapByHeight(double z, double min_z,
