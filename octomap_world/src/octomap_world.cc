@@ -861,9 +861,19 @@ void OctomapWorld::inflateOccupied() {
     }
     time_case1neg += (clock()-start_time)/((double)CLOCKS_PER_SEC);
 
+    // If box has resolution size, can already set it occupied
+    start_time = clock();
+    // In case the box has resolution size and is not feasible
+    if (box.second - epsilon < resolution) {
+      occupied_points.push(pointEigenToOctomap(box.first));
+      time_case2pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
+      case2++;
+      continue;
+    }
+    time_case2neg += (clock()-start_time)/((double)CLOCKS_PER_SEC);
+
     // Otherwise check every single resolution_sized box
     start_time = clock();
-    case2++;
 
     Eigen::Vector3d bbx_min =
         box.first - Eigen::Vector3d::Constant((box.second - resolution) / 2);
@@ -885,7 +895,8 @@ void OctomapWorld::inflateOccupied() {
         }
       }
     }
-    time_case2pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
+    time_case3pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
+    case3++;
   }
 
 
