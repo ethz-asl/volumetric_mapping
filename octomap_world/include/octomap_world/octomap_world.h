@@ -274,9 +274,11 @@ class OctomapWorld : public WorldBase {
   double time_case2neg;
   double time_case3pos;
   double time_case3neg;
+  double time_case4;
   int case1;
   int case2;
   int case3;
+  int case4;
 };
 
 }  // namespace volumetric_mapping

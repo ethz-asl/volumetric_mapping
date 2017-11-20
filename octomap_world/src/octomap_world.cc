@@ -829,9 +829,11 @@ void OctomapWorld::inflateOccupied() {
   time_case1neg = 0;
   time_case2neg = 0;
   time_case3neg = 0;
+  time_case4 = 0;
   case1 = 0;
   case2 = 0;
   case3 = 0;
+  case4 = 0;
 
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
@@ -848,6 +850,8 @@ void OctomapWorld::inflateOccupied() {
   std::queue<octomap::point3d> occupied_points;
   Eigen::Vector3d actual_position;
 
+  std::cout << "There are " << box_vector.size() << " free boxes\n";
+
   for (const std::pair<Eigen::Vector3d, double>& box : box_vector) {
 
     // In case the whole box is feasible, no occupied point has to be added
@@ -863,7 +867,6 @@ void OctomapWorld::inflateOccupied() {
 
     // If box has resolution size, can already set it occupied
     start_time = clock();
-    // In case the box has resolution size and is not feasible
     if (box.second - epsilon < resolution) {
       occupied_points.push(pointEigenToOctomap(box.first));
       time_case2pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
@@ -872,9 +875,35 @@ void OctomapWorld::inflateOccupied() {
     }
     time_case2neg += (clock()-start_time)/((double)CLOCKS_PER_SEC);
 
+    // In case the whole box can't be feasible (bounding box of robot_size_
+    // around a point on one bound of the box hits obstacle on the other side)
+    if (getCellStatusBoundingBox(
+            box.first, Eigen::Vector3d::Constant(resolution - epsilon)
+                           .cwiseMax(robot_size_ - Eigen::Vector3d::Constant(
+                                                       box.second))) != kFree) {
+      Eigen::Vector3d bbx_min =
+          box.first - Eigen::Vector3d::Constant(box.second - resolution) / 2;
+      Eigen::Vector3d bbx_max =
+          box.first + Eigen::Vector3d::Constant(box.second - resolution) / 2;
+      for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
+           x_position += resolution) {
+        for (double y_position = bbx_min.y();
+             y_position <= bbx_max.y() + epsilon; y_position += resolution) {
+          for (double z_position = bbx_min.z();
+               z_position <= bbx_max.z() + epsilon; z_position += resolution) {
+            occupied_points.push(
+                octomap::point3d(x_position, y_position, z_position));
+          }
+        }
+      }
+      time_case3pos += (clock() - start_time) / ((double)CLOCKS_PER_SEC);
+      case3++;
+      continue;
+    }
+    time_case3neg += (clock() - start_time) / ((double)CLOCKS_PER_SEC);
+
     // Otherwise check every single resolution_sized box
     start_time = clock();
-
     Eigen::Vector3d bbx_min =
         box.first - Eigen::Vector3d::Constant((box.second - resolution) / 2);
     Eigen::Vector3d bbx_max =
@@ -895,15 +924,17 @@ void OctomapWorld::inflateOccupied() {
         }
       }
     }
-    time_case3pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
-    case3++;
+    time_case4 += (clock()-start_time)/((double)CLOCKS_PER_SEC);
+    case4++;
   }
 
 
   std::cout << "Positive cases: time_case1: " << time_case1pos << ", time_case2: " << time_case2pos << ", time_case3: " << time_case3pos << "\n";
   std::cout << "Negative cases: time_case1: " << time_case1neg << ", time_case2: " << time_case2neg << ", time_case3: " << time_case3neg << "\n";
-  double total_cases = (double)(case1 + case2 + case3)/100.0;
-  std::cout << "case1: " << case1/total_cases << "%, case2: " << case2/total_cases << "%, case3: " << case3/total_cases << "%\n";
+  std::cout << "time_case4: " << time_case4 << "\n";
+  double total_cases = (double)(case1 + case2 + case3 + case4)/100.0;
+  std::cout << "case1: " << case1/total_cases << "%, case2: " << case2/total_cases << "%, case3: " << case3/total_cases  << "%, case4: " << case4/total_cases << "%\n";
+  std::cout << "total_cases: " << total_cases*100 << "\n";
 
   // Set all infeasible points occupied
   while (!occupied_points.empty()) {
