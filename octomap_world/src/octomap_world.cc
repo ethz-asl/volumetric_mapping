@@ -844,7 +844,6 @@ void OctomapWorld::inflateOccupied() {
 
   std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
   getAllFreeBoxes(&box_vector);
-  std::vector<std::pair<Eigen::Vector3d, double>> box_vector_occupied;
 
   std::queue<octomap::point3d> occupied_points;
   Eigen::Vector3d actual_position;
@@ -855,8 +854,7 @@ void OctomapWorld::inflateOccupied() {
 
     // In case the whole box is feasible, no occupied point has to be added
     clock_t start_time = clock();
-    getOccupiedBoxesBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second - epsilon), &box_vector_occupied);
-    if (box_vector_occupied.empty()) {
+    if (getCellStatusBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second)) == kFree) {
       time_case1pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
       case1++;
       continue;
@@ -902,26 +900,8 @@ void OctomapWorld::inflateOccupied() {
 
     // Otherwise check every single resolution_sized box
     start_time = clock();
-    Eigen::Vector3d bbx_min =
-        box.first - Eigen::Vector3d::Constant((box.second - resolution) / 2);
-    Eigen::Vector3d bbx_max =
-        box.first + Eigen::Vector3d::Constant(box.second);
-    for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
-         x_position += resolution) {
-      for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-           y_position += resolution) {
-        for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
-             z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          if (getCellStatusBoundingBox(
-                      actual_position, robot_size_ + Eigen::Vector3d::Constant(resolution)) !=
-                  kFree) {
-            occupied_points.push(
-                octomap::point3d(x_position, y_position, z_position));
-          }
-        }
-      }
-    }
+    std::vector<std::pair<Eigen::Vector3d, double>> box_vector_occupied;
+    getOccupiedBoxesBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second - epsilon), &box_vector_occupied);
     time_case4 += (clock()-start_time)/((double)CLOCKS_PER_SEC);
     case4++;
   }
