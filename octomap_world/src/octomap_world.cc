@@ -842,10 +842,9 @@ void OctomapWorld::inflateOccupied() {
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
-  // params_.treat_unknown_as_occupied = false;
-
   std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
   getAllFreeBoxes(&box_vector);
+  std::vector<std::pair<Eigen::Vector3d, double>> box_vector_occupied;
 
   std::queue<octomap::point3d> occupied_points;
   Eigen::Vector3d actual_position;
@@ -856,9 +855,8 @@ void OctomapWorld::inflateOccupied() {
 
     // In case the whole box is feasible, no occupied point has to be added
     clock_t start_time = clock();
-    if (getCellStatusBoundingBox(
-            box.first, robot_size_ + Eigen::Vector3d::Constant(box.second)) ==
-        kFree) {
+    getOccupiedBoxesBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second - epsilon), &box_vector_occupied);
+    if (box_vector_occupied.empty()) {
       time_case1pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
       case1++;
       continue;
