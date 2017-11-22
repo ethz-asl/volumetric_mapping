@@ -839,14 +839,13 @@ void OctomapWorld::inflateOccupied() {
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
-  Eigen::Vector3d epsilon_3d;
-  epsilon_3d.setConstant(epsilon);
 
   std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
   getAllFreeBoxes(&box_vector);
 
-  std::queue<octomap::point3d> occupied_points;
   Eigen::Vector3d actual_position;
+  octomap::KeySet occupied_keys;
+  octomap::OcTreeKey actual_key;
 
   std::cout << "There are " << box_vector.size() << " free boxes\n";
 
@@ -864,7 +863,9 @@ void OctomapWorld::inflateOccupied() {
              y_position += resolution) {
           for (double z_position = bbx_min.z(); z_position <= bbx_max.z() + epsilon;
                z_position += resolution) {
-            occupied_points.push(octomap::point3d(x_position, y_position, z_position));
+            actual_position << x_position, y_position, z_position;
+            coordToKey(actual_position, &actual_key);
+            occupied_keys.insert(actual_key);
           }
         }
       }
@@ -883,7 +884,8 @@ void OctomapWorld::inflateOccupied() {
     // If box has resolution size, can already set it occupied
     start_time = clock();
     if (box.second - epsilon < resolution) {
-      occupied_points.push(pointEigenToOctomap(box.first));
+      coordToKey(box.first, &actual_key);
+      occupied_keys.insert(actual_key);
       time_case2pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
       case2++;
       continue;
@@ -906,8 +908,9 @@ void OctomapWorld::inflateOccupied() {
              y_position <= bbx_max.y() + epsilon; y_position += resolution) {
           for (double z_position = bbx_min.z();
                z_position <= bbx_max.z() + epsilon; z_position += resolution) {
-            occupied_points.push(
-                octomap::point3d(x_position, y_position, z_position));
+            actual_position << x_position, y_position, z_position;
+            coordToKey(actual_position, &actual_key);
+            occupied_keys.insert(actual_key);
           }
         }
       }
@@ -926,13 +929,14 @@ void OctomapWorld::inflateOccupied() {
       Eigen::Vector3d box_infeasible_max = box_occupied.first + (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
       Eigen::Vector3d actual_box_min = box.first - Eigen::Vector3d::Constant(box.second) / 2;
       Eigen::Vector3d actual_box_max = box.first + Eigen::Vector3d::Constant(box.second) / 2;
-      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(box_infeasible_min) + Eigen::Vector3d::Constant(resolution) / 2;
+      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(box_infeasible_min) + Eigen::Vector3d::Constant(epsilon);
       Eigen::Vector3d bbx_max = actual_box_max.cwiseMin(box_infeasible_max);
       for (double x_position = bbx_min.x(); x_position <= bbx_max.x(); x_position += resolution) {
         for (double y_position = bbx_min.y(); y_position <= bbx_max.y(); y_position += resolution) {
           for (double z_position = bbx_min.z(); z_position <= bbx_max.z(); z_position += resolution) {
-            occupied_points.push(
-                octomap::point3d(x_position, y_position, z_position));
+            actual_position << x_position, y_position, z_position;
+            coordToKey(actual_position, &actual_key);
+            occupied_keys.insert(actual_key);
           }
         }
       }
@@ -951,9 +955,8 @@ void OctomapWorld::inflateOccupied() {
 
   // Set all infeasible points occupied
   clock_t start_time = clock();
-  while (!occupied_points.empty()) {
-    octree_->setNodeValue(occupied_points.front(), log_odds_value, lazy_eval);
-    occupied_points.pop();
+  for (octomap::OcTreeKey key : occupied_keys) {
+    octree_->setNodeValue(octree_->keyToCoord(key), log_odds_value, lazy_eval);
   }
   std::cout << "It took " << (clock() - start_time) / ((double)CLOCKS_PER_SEC) << " to evaluate the occupied_points set\n";
 
