@@ -823,46 +823,33 @@ void OctomapWorld::generateMarkerArray(
 }
 
 void OctomapWorld::inflateOccupied() {
-  time_case1pos = 0;
-  time_case2pos = 0;
-  time_case3pos = 0;
-  time_case1neg = 0;
-  time_case2neg = 0;
-  time_case3neg = 0;
-  time_case4 = 0;
-  case1 = 0;
-  case2 = 0;
-  case3 = 0;
-  case4 = 0;
-
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
   Eigen::Vector3d epsilon_3d = Eigen::Vector3d::Constant(epsilon);
 
-  std::vector<std::pair<Eigen::Vector3d, double>> box_vector;
-  getAllFreeBoxes(&box_vector);
+  std::vector<std::pair<Eigen::Vector3d, double>> free_boxes_vector;
+  getAllFreeBoxes(&free_boxes_vector);
 
   Eigen::Vector3d actual_position;
   octomap::KeySet occupied_keys;
   octomap::OcTreeKey actual_key;
 
-  std::cout << "There are " << box_vector.size() << " free boxes\n";
+  for (const std::pair<Eigen::Vector3d, double>& free_box : free_boxes_vector) {
 
-  for (const std::pair<Eigen::Vector3d, double>& box : box_vector) {
-
-    // In case box size implicates whole box to be infeasible
-    if (box.second < robot_size_.minCoeff()/2 - epsilon) {
+    // In case box size implicates that the whole box is infeasible (an obstacle is at a distance of at most 2 * box_size, otherwise the pruned free box would have been bigger)
+    // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives exactly same result, just much slower...
+    if (free_box.second < robot_size_.minCoeff()/2 - epsilon) {
       Eigen::Vector3d bbx_min =
-          box.first - Eigen::Vector3d::Constant(box.second - resolution) / 2;
+          free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2 + epsilon_3d;
       Eigen::Vector3d bbx_max =
-          box.first + Eigen::Vector3d::Constant(box.second - resolution) / 2;
-      for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
+          free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2 - epsilon_3d;
+      for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
            x_position += resolution) {
-        for (double y_position = bbx_min.y(); y_position <= bbx_max.y() + epsilon;
+        for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
              y_position += resolution) {
-          for (double z_position = bbx_min.z(); z_position <= bbx_max.z() + epsilon;
+          for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
                z_position += resolution) {
             actual_position << x_position, y_position, z_position;
             coordToKey(actual_position, &actual_key);
@@ -870,39 +857,25 @@ void OctomapWorld::inflateOccupied() {
           }
         }
       }
+      // Nothing more to do with this box, is already completely infeasible
       continue;
     }
 
-    // In case the whole box is feasible, no occupied point has to be added
-    clock_t start_time = clock();
-    if (getCellStatusBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second)) == kFree) {
-      time_case1pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
-      case1++;
+    // In case the whole box is feasible, nothing has to be done with this box
+    if (getCellStatusBoundingBox(free_box.first, robot_size_ + Eigen::Vector3d::Constant(free_box.second)) == kFree) {
       continue;
     }
-    time_case1neg += (clock()-start_time)/((double)CLOCKS_PER_SEC);
-
-    // If box has resolution size, can already set it occupied
-    start_time = clock();
-    if (box.second - epsilon < resolution) {
-      coordToKey(box.first, &actual_key);
-      occupied_keys.insert(actual_key);
-      time_case2pos += (clock()-start_time)/((double)CLOCKS_PER_SEC);
-      case2++;
-      continue;
-    }
-    time_case2neg += (clock()-start_time)/((double)CLOCKS_PER_SEC);
 
     // In case the whole box can't be feasible (bounding box of robot_size_
-    // around a point on one bound of the box hits obstacle on the other side)
+    // around a point on one bound of the box would hit obstacle on the other side)
     if (getCellStatusBoundingBox(
-            box.first, Eigen::Vector3d::Constant(resolution - epsilon)
+            free_box.first, Eigen::Vector3d::Constant(resolution - epsilon)
                            .cwiseMax(robot_size_ - Eigen::Vector3d::Constant(
-                                                       box.second))) != kFree) {
+                                                       free_box.second))) != kFree) {
       Eigen::Vector3d bbx_min =
-          box.first - Eigen::Vector3d::Constant(box.second - resolution) / 2;
+          free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2 + epsilon_3d;
       Eigen::Vector3d bbx_max =
-          box.first + Eigen::Vector3d::Constant(box.second - resolution) / 2;
+          free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2 - epsilon_3d;
       for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
            x_position += resolution) {
         for (double y_position = bbx_min.y();
@@ -915,23 +888,24 @@ void OctomapWorld::inflateOccupied() {
           }
         }
       }
-      time_case3pos += (clock() - start_time) / ((double)CLOCKS_PER_SEC);
-      case3++;
+      // Nothing more to do with this box, is already completely infeasible
       continue;
     }
-    time_case3neg += (clock() - start_time) / ((double)CLOCKS_PER_SEC);
 
-    // Otherwise go over the hit obstacles to determine infeasible points
-    start_time = clock();
-    std::vector<std::pair<Eigen::Vector3d, double>> box_vector_occupied;
-    getOccupiedBoxesBoundingBox(box.first, robot_size_ + Eigen::Vector3d::Constant(box.second), &box_vector_occupied);
-    for (const std::pair<Eigen::Vector3d, double>& box_occupied : box_vector_occupied) {
-      Eigen::Vector3d box_infeasible_min = box_occupied.first - (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
-      Eigen::Vector3d box_infeasible_max = box_occupied.first + (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
-      Eigen::Vector3d actual_box_min = box.first - Eigen::Vector3d::Constant(box.second) / 2;
-      Eigen::Vector3d actual_box_max = box.first + Eigen::Vector3d::Constant(box.second) / 2;
-      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(box_infeasible_min) + Eigen::Vector3d::Constant(epsilon);
-      Eigen::Vector3d bbx_max = actual_box_max.cwiseMin(box_infeasible_max);
+    // Otherwise find which obstacles cause some parts of the box to be infeasible, and find all those points through inflating those obstacles
+    std::vector<std::pair<Eigen::Vector3d, double>> occupied_boxes_vector;
+    getOccupiedBoxesBoundingBox(free_box.first, robot_size_ + Eigen::Vector3d::Constant(free_box.second), &occupied_boxes_vector);
+    for (const std::pair<Eigen::Vector3d, double>& box_occupied : occupied_boxes_vector) {
+      // Infeasible volume caused by box_occupied
+      Eigen::Vector3d infeasible_box_min = box_occupied.first - (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+      Eigen::Vector3d infeasible_box_max = box_occupied.first + (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+      // Volume of free_box
+      Eigen::Vector3d actual_box_min = free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2;
+      Eigen::Vector3d actual_box_max = free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2;
+      // Overlapping volume of box_infeasible and free_box
+      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(infeasible_box_min) + epsilon_3d;
+      Eigen::Vector3d bbx_max = actual_box_max.cwiseMin(infeasible_box_max) - epsilon_3d;
+      // Set this volume occupied
       for (double x_position = bbx_min.x(); x_position <= bbx_max.x(); x_position += resolution) {
         for (double y_position = bbx_min.y(); y_position <= bbx_max.y(); y_position += resolution) {
           for (double z_position = bbx_min.z(); z_position <= bbx_max.z(); z_position += resolution) {
@@ -942,13 +916,9 @@ void OctomapWorld::inflateOccupied() {
         }
       }
     }
-    time_case4 += (clock()-start_time)/((double)CLOCKS_PER_SEC);
-    case4++;
-
-
   }
 
-  // Set boundaries infeasible
+  // Set map boundaries infeasible
   // TODO(Sebastian) There has to be a nicer way to do this!!
   Eigen::Vector3d map_min_bound;
   Eigen::Vector3d map_max_bound;
@@ -1018,19 +988,10 @@ void OctomapWorld::inflateOccupied() {
     }
   }
 
-  std::cout << "Positive cases: time_case1: " << time_case1pos << ", time_case2: " << time_case2pos << ", time_case3: " << time_case3pos << "\n";
-  std::cout << "Negative cases: time_case1: " << time_case1neg << ", time_case2: " << time_case2neg << ", time_case3: " << time_case3neg << "\n";
-  std::cout << "time_case4: " << time_case4 << "\n";
-  double total_cases = (double)(case1 + case2 + case3 + case4)/100.0;
-  std::cout << "case1: " << case1/total_cases << "%, case2: " << case2/total_cases << "%, case3: " << case3/total_cases  << "%, case4: " << case4/total_cases << "%\n";
-  std::cout << "total_cases: " << total_cases*100 << "\n";
-
   // Set all infeasible points occupied
-  clock_t start_time = clock();
   for (octomap::OcTreeKey key : occupied_keys) {
     octree_->setNodeValue(octree_->keyToCoord(key), log_odds_value, lazy_eval);
   }
-  std::cout << "It took " << (clock() - start_time) / ((double)CLOCKS_PER_SEC) << " to evaluate the occupied_points set\n";
 
   // This is necessary since lazy_eval is set to true.
   octree_->updateInnerOccupancy();
