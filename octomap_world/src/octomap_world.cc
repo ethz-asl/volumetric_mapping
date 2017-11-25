@@ -945,78 +945,78 @@ void OctomapWorld::inflateOccupied() {
     time_case4 += (clock()-start_time)/((double)CLOCKS_PER_SEC);
     case4++;
 
-    // Set boundaries infeasible
-    // TODO(Sebastian) There has to be a nicer way to do this!!
-    Eigen::Vector3d map_min_bound;
-    Eigen::Vector3d map_max_bound;
-    getMapBounds(&map_min_bound, &map_max_bound);
-    Eigen::Vector3d feasible_min_bound = map_min_bound + robot_size_ / 2;
-    Eigen::Vector3d feasible_max_bound = map_max_bound - robot_size_ / 2;
-    // Small offset to not hit the boundaries
-    map_min_bound += epsilon_3d;
-    map_max_bound -= epsilon_3d;
-    feasible_min_bound -= epsilon_3d;
-    feasible_max_bound += epsilon_3d;
-
-    for (double x_position = map_min_bound.x(); x_position <= feasible_min_bound.x(); x_position += resolution) {
-      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-        for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
-    for (double x_position = feasible_max_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-        for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
-
-    for (double y_position = map_min_bound.y(); y_position <= feasible_min_bound.y(); y_position += resolution) {
-      for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-        for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
-    for (double y_position = feasible_max_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-      for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-        for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
-
-    for (double z_position = map_min_bound.z(); z_position <= feasible_min_bound.z(); z_position += resolution) {
-      for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-        for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
-    for (double z_position = feasible_max_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-      for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-        for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-          actual_position << x_position, y_position, z_position;
-          coordToKey(actual_position, &actual_key);
-          occupied_keys.insert(actual_key);
-        }
-      }
-    }
 
   }
 
+  // Set boundaries infeasible
+  // TODO(Sebastian) There has to be a nicer way to do this!!
+  Eigen::Vector3d map_min_bound;
+  Eigen::Vector3d map_max_bound;
+  getMapBounds(&map_min_bound, &map_max_bound);
+  Eigen::Vector3d feasible_min_bound = map_min_bound + robot_size_ / 2;
+  Eigen::Vector3d feasible_max_bound = map_max_bound - robot_size_ / 2;
+  // Small offset to not hit the boundaries
+  map_min_bound += epsilon_3d;
+  map_max_bound -= epsilon_3d;
+  feasible_min_bound -= epsilon_3d;
+  feasible_max_bound += epsilon_3d;
+
+  for (double x_position = map_min_bound.x(); x_position <= feasible_min_bound.x(); x_position += resolution) {
+    for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
+      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
+  for (double x_position = feasible_max_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
+    for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
+      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
+
+  for (double y_position = map_min_bound.y(); y_position <= feasible_min_bound.y(); y_position += resolution) {
+    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
+      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
+  for (double y_position = feasible_max_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
+    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
+      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
+
+  for (double z_position = map_min_bound.z(); z_position <= feasible_min_bound.z(); z_position += resolution) {
+    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
+      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
+  for (double z_position = feasible_max_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
+    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
+      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        occupied_keys.insert(actual_key);
+      }
+    }
+  }
 
   std::cout << "Positive cases: time_case1: " << time_case1pos << ", time_case2: " << time_case2pos << ", time_case3: " << time_case3pos << "\n";
   std::cout << "Negative cases: time_case1: " << time_case1neg << ", time_case2: " << time_case2neg << ", time_case3: " << time_case3neg << "\n";
