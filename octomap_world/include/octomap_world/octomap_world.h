@@ -270,7 +270,6 @@ class OctomapWorld : public WorldBase {
   // Temporary variable for KeyRay since it resizes it to a HUGE value by
   // default. Thanks a lot to @xiaopenghuang for catching this.
   octomap::KeyRay key_ray_;
-
 };
 
 }  // namespace volumetric_mapping

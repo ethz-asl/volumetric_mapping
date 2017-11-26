@@ -827,7 +827,6 @@ void OctomapWorld::inflateOccupied() {
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001; // Small offset to not hit boundary of nodes.
-  Eigen::Vector3d epsilon_3d = Eigen::Vector3d::Constant(epsilon);
 
   std::vector<std::pair<Eigen::Vector3d, double>> free_boxes_vector;
   getAllFreeBoxes(&free_boxes_vector);
@@ -950,8 +949,6 @@ void OctomapWorld::getKeysBoundingBox(const Eigen::Vector3d &position,
   const double resolution = octree_->getResolution();
   Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
   Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
-  // std::cout << "in function: bbx_min " << bbx_min.transpose() << ", bbx_max "
-  // << bbx_max.transpose() << "\n";
   Eigen::Vector3d actual_position;
   octomap::OcTreeKey actual_key;
   for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
