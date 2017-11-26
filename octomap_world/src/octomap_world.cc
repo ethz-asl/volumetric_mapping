@@ -826,7 +826,7 @@ void OctomapWorld::inflateOccupied() {
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
-  const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  const double epsilon = 0.001; // Small offset to not hit boundary of nodes.
   Eigen::Vector3d epsilon_3d = Eigen::Vector3d::Constant(epsilon);
 
   std::vector<std::pair<Eigen::Vector3d, double>> free_boxes_vector;
@@ -836,157 +836,101 @@ void OctomapWorld::inflateOccupied() {
   octomap::KeySet occupied_keys;
   octomap::OcTreeKey actual_key;
 
-  for (const std::pair<Eigen::Vector3d, double>& free_box : free_boxes_vector) {
+  for (const std::pair<Eigen::Vector3d, double> &free_box : free_boxes_vector) {
 
-    // In case box size implicates that the whole box is infeasible (an obstacle is at a distance of at most 2 * box_size, otherwise the pruned free box would have been bigger)
-    // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives exactly same result, just much slower...
-    if (free_box.second < robot_size_.minCoeff()/2 - epsilon) {
-      Eigen::Vector3d bbx_min =
-          free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2 + epsilon_3d;
-      Eigen::Vector3d bbx_max =
-          free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2 - epsilon_3d;
-      for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
-           x_position += resolution) {
-        for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-             y_position += resolution) {
-          for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
-               z_position += resolution) {
-            actual_position << x_position, y_position, z_position;
-            coordToKey(actual_position, &actual_key);
-            occupied_keys.insert(actual_key);
-          }
-        }
-      }
-      // Nothing more to do with this box, is already completely infeasible
+    // In case box size implicates that the whole box is infeasible (an obstacle
+    // is at a distance of at most 2 * box_size, otherwise the pruned free box
+    // would have been bigger)
+    // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives
+    // exactly same result, just much slower...
+    if (free_box.second < robot_size_.minCoeff() / 2 - epsilon) {
+      getKeysBoundingBox(free_box.first,
+                         Eigen::Vector3d::Constant(free_box.second),
+                         &occupied_keys);
       continue;
     }
 
     // In case the whole box is feasible, nothing has to be done with this box
-    if (getCellStatusBoundingBox(free_box.first, robot_size_ + Eigen::Vector3d::Constant(free_box.second)) == kFree) {
+    if (getCellStatusBoundingBox(free_box.first,
+                                 robot_size_ + Eigen::Vector3d::Constant(
+                                                   free_box.second)) == kFree) {
       continue;
     }
 
     // In case the whole box can't be feasible (bounding box of robot_size_
-    // around a point on one bound of the box would hit obstacle on the other side)
+    // around a point on one bound of the box would hit obstacle on the other
+    // side)
     if (getCellStatusBoundingBox(
-            free_box.first, Eigen::Vector3d::Constant(resolution - epsilon)
-                           .cwiseMax(robot_size_ - Eigen::Vector3d::Constant(
-                                                       free_box.second))) != kFree) {
-      Eigen::Vector3d bbx_min =
-          free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2 + epsilon_3d;
-      Eigen::Vector3d bbx_max =
-          free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2 - epsilon_3d;
-      for (double x_position = bbx_min.x(); x_position <= bbx_max.x() + epsilon;
-           x_position += resolution) {
-        for (double y_position = bbx_min.y();
-             y_position <= bbx_max.y() + epsilon; y_position += resolution) {
-          for (double z_position = bbx_min.z();
-               z_position <= bbx_max.z() + epsilon; z_position += resolution) {
-            actual_position << x_position, y_position, z_position;
-            coordToKey(actual_position, &actual_key);
-            occupied_keys.insert(actual_key);
-          }
-        }
-      }
-      // Nothing more to do with this box, is already completely infeasible
+            free_box.first,
+            Eigen::Vector3d::Constant(resolution - epsilon).cwiseMax(
+                robot_size_ - Eigen::Vector3d::Constant(free_box.second))) !=
+        kFree) {
+      getKeysBoundingBox(free_box.first,
+                         Eigen::Vector3d::Constant(free_box.second),
+                         &occupied_keys);
       continue;
     }
 
-    // Otherwise find which obstacles cause some parts of the box to be infeasible, and find all those points through inflating those obstacles
+    // Otherwise find which obstacles cause some parts of the box to be
+    // infeasible, and find all those points through inflating those obstacles
     std::vector<std::pair<Eigen::Vector3d, double>> occupied_boxes_vector;
-    getOccupiedBoxesBoundingBox(free_box.first, robot_size_ + Eigen::Vector3d::Constant(free_box.second), &occupied_boxes_vector);
-    for (const std::pair<Eigen::Vector3d, double>& box_occupied : occupied_boxes_vector) {
+    getOccupiedBoxesBoundingBox(free_box.first,
+                                robot_size_ +
+                                    Eigen::Vector3d::Constant(free_box.second),
+                                &occupied_boxes_vector);
+    for (const std::pair<Eigen::Vector3d, double> &box_occupied :
+         occupied_boxes_vector) {
       // Infeasible volume caused by box_occupied
-      Eigen::Vector3d infeasible_box_min = box_occupied.first - (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
-      Eigen::Vector3d infeasible_box_max = box_occupied.first + (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+      Eigen::Vector3d infeasible_box_min =
+          box_occupied.first -
+          (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+      Eigen::Vector3d infeasible_box_max =
+          box_occupied.first +
+          (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
       // Volume of free_box
-      Eigen::Vector3d actual_box_min = free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2;
-      Eigen::Vector3d actual_box_max = free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2;
+      Eigen::Vector3d actual_box_min =
+          free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2;
+      Eigen::Vector3d actual_box_max =
+          free_box.first + Eigen::Vector3d::Constant(free_box.second) / 2;
       // Overlapping volume of box_infeasible and free_box
-      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(infeasible_box_min) + epsilon_3d;
-      Eigen::Vector3d bbx_max = actual_box_max.cwiseMin(infeasible_box_max) - epsilon_3d;
-      // Set this volume occupied
-      for (double x_position = bbx_min.x(); x_position <= bbx_max.x(); x_position += resolution) {
-        for (double y_position = bbx_min.y(); y_position <= bbx_max.y(); y_position += resolution) {
-          for (double z_position = bbx_min.z(); z_position <= bbx_max.z(); z_position += resolution) {
-            actual_position << x_position, y_position, z_position;
-            coordToKey(actual_position, &actual_key);
-            occupied_keys.insert(actual_key);
-          }
-        }
-      }
+      Eigen::Vector3d bbx_min = actual_box_min.cwiseMax(infeasible_box_min);
+      Eigen::Vector3d bbx_max = actual_box_max.cwiseMin(infeasible_box_max);
+      Eigen::Vector3d bbx_center = (bbx_min + bbx_max) / 2;
+      Eigen::Vector3d bbx_size = bbx_max - bbx_min;
+      getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
     }
   }
 
   // Set map boundaries infeasible
   // TODO(Sebastian) There has to be a nicer way to do this!!
-  Eigen::Vector3d map_min_bound;
-  Eigen::Vector3d map_max_bound;
-  getMapBounds(&map_min_bound, &map_max_bound);
-  Eigen::Vector3d feasible_min_bound = map_min_bound + robot_size_ / 2;
-  Eigen::Vector3d feasible_max_bound = map_max_bound - robot_size_ / 2;
-  // Small offset to not hit the boundaries
-  map_min_bound += epsilon_3d;
-  map_max_bound -= epsilon_3d;
-  feasible_min_bound -= epsilon_3d;
-  feasible_max_bound += epsilon_3d;
+  Eigen::Vector3d map_center = getMapCenter();
+  Eigen::Vector3d map_size = getMapSize();
+  Eigen::Vector3d bbx_center;
+  Eigen::Vector3d bbx_size;
 
-  for (double x_position = map_min_bound.x(); x_position <= feasible_min_bound.x(); x_position += resolution) {
-    for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
-  for (double x_position = feasible_max_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-    for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
+  bbx_size = map_size;
+  bbx_size.x() = robot_size_.x() / 2;
+  bbx_center = map_center;
+  bbx_center.x() = map_center.x() - map_size.x() / 2 + robot_size_.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.x() = map_center.x() + map_size.x() / 2 - robot_size_.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
-  for (double y_position = map_min_bound.y(); y_position <= feasible_min_bound.y(); y_position += resolution) {
-    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
-  for (double y_position = feasible_max_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-      for (double z_position = map_min_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
+  bbx_size = map_size;
+  bbx_size.y() = robot_size_.y() / 2;
+  bbx_center = map_center;
+  bbx_center.y() = map_center.y() - map_size.y() / 2 + robot_size_.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.y() = map_center.y() + map_size.y() / 2 - robot_size_.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
-  for (double z_position = map_min_bound.z(); z_position <= feasible_min_bound.z(); z_position += resolution) {
-    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
-  for (double z_position = feasible_max_bound.z(); z_position <= map_max_bound.z(); z_position += resolution) {
-    for (double x_position = map_min_bound.x(); x_position <= map_max_bound.x(); x_position += resolution) {
-      for (double y_position = map_min_bound.y(); y_position <= map_max_bound.y(); y_position += resolution) {
-        actual_position << x_position, y_position, z_position;
-        coordToKey(actual_position, &actual_key);
-        occupied_keys.insert(actual_key);
-      }
-    }
-  }
+  bbx_size = map_size;
+  bbx_size.z() = robot_size_.z() / 2;
+  bbx_center = map_center;
+  bbx_center.z() = map_center.z() - map_size.z() / 2 + robot_size_.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.z() = map_center.z() + map_size.z() / 2 - robot_size_.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   // Set all infeasible points occupied
   for (octomap::OcTreeKey key : occupied_keys) {
@@ -996,6 +940,32 @@ void OctomapWorld::inflateOccupied() {
   // This is necessary since lazy_eval is set to true.
   octree_->updateInnerOccupancy();
   octree_->prune();
+}
+
+void OctomapWorld::getKeysBoundingBox(const Eigen::Vector3d &position,
+                                      const Eigen::Vector3d &bounding_box_size,
+                                      octomap::KeySet *keys) const {
+  const double epsilon = 0.001; // Small offset to not hit box boundaries
+  Eigen::Vector3d epsilon_3d = Eigen::Vector3d::Constant(epsilon);
+  const double resolution = octree_->getResolution();
+  Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
+  Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
+  // std::cout << "in function: bbx_min " << bbx_min.transpose() << ", bbx_max "
+  // << bbx_max.transpose() << "\n";
+  Eigen::Vector3d actual_position;
+  octomap::OcTreeKey actual_key;
+  for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
+       x_position += resolution) {
+    for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+         y_position += resolution) {
+      for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
+           z_position += resolution) {
+        actual_position << x_position, y_position, z_position;
+        coordToKey(actual_position, &actual_key);
+        keys->insert(actual_key);
+      }
+    }
+  }
 }
 
 double OctomapWorld::colorizeMapByHeight(double z, double min_z,

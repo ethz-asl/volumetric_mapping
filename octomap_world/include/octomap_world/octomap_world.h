@@ -238,6 +238,10 @@ class OctomapWorld : public WorldBase {
                            std::vector<std::pair<Eigen::Vector3d, double> >*
                                occupied_box_vector) const;
 
+  void getKeysBoundingBox(const Eigen::Vector3d &position,
+                          const Eigen::Vector3d &bounding_box_size,
+                          octomap::KeySet *keys) const;
+
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
                const octomap::point3d& point, octomap::KeySet* free_cells,
