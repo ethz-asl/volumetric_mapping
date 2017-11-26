@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OCTOMAP_WORLD_OCTOMAP_WORLD_H_
 
 #include <string>
-#include <queue>
 
 #include <octomap/octomap.h>
 #include <octomap_msgs/Octomap.h>
