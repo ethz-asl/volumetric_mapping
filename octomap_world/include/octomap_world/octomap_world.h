@@ -196,7 +196,7 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* free_nodes);
 
   // Inflation of all obstacles to take robot_size_ into account
-  void inflateOccupied();
+  void inflateOccupied(const Eigen::Vector3d& safety_space);
 
   // Change detection -- when this is called, this resets the change detection
   // tracking within the map. So 2 consecutive calls will produce first the

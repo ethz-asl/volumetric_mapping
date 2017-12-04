@@ -822,7 +822,10 @@ void OctomapWorld::generateMarkerArray(
   }
 }
 
-void OctomapWorld::inflateOccupied() {
+void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
+  // Inflate all obstacles by safety_space, such that if a collision free
+  // trajectory is generated in this new space, it is guaranteed that
+  // safety_space around this trajectory is collision free in the original space
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
@@ -835,14 +838,14 @@ void OctomapWorld::inflateOccupied() {
   octomap::KeySet occupied_keys;
   octomap::OcTreeKey actual_key;
 
-  for (const std::pair<Eigen::Vector3d, double> &free_box : free_boxes_vector) {
+  for (const std::pair<Eigen::Vector3d, double>& free_box : free_boxes_vector) {
 
     // In case box size implicates that the whole box is infeasible (an obstacle
     // is at a distance of at most 2 * box_size, otherwise the pruned free box
     // would have been bigger)
     // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives
     // exactly same result, just much slower...
-    if (free_box.second < robot_size_.minCoeff() / 2 - epsilon) {
+    if (free_box.second < safety_space.minCoeff() / 2 - epsilon) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
                          &occupied_keys);
@@ -851,18 +854,18 @@ void OctomapWorld::inflateOccupied() {
 
     // In case the whole box is feasible, nothing has to be done with this box
     if (getCellStatusBoundingBox(free_box.first,
-                                 robot_size_ + Eigen::Vector3d::Constant(
+                                 safety_space + Eigen::Vector3d::Constant(
                                                    free_box.second)) == kFree) {
       continue;
     }
 
-    // In case the whole box can't be feasible (bounding box of robot_size_
+    // In case the whole box can't be feasible (bounding box of safety_space
     // around a point on one bound of the box would hit obstacle on the other
     // side)
     if (getCellStatusBoundingBox(
             free_box.first,
             Eigen::Vector3d::Constant(resolution - epsilon).cwiseMax(
-                robot_size_ - Eigen::Vector3d::Constant(free_box.second))) !=
+                safety_space - Eigen::Vector3d::Constant(free_box.second))) !=
         kFree) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
@@ -874,7 +877,7 @@ void OctomapWorld::inflateOccupied() {
     // infeasible, and find all those points through inflating those obstacles
     std::vector<std::pair<Eigen::Vector3d, double>> occupied_boxes_vector;
     getOccupiedBoxesBoundingBox(free_box.first,
-                                robot_size_ +
+                                safety_space +
                                     Eigen::Vector3d::Constant(free_box.second),
                                 &occupied_boxes_vector);
     for (const std::pair<Eigen::Vector3d, double> &box_occupied :
@@ -882,10 +885,10 @@ void OctomapWorld::inflateOccupied() {
       // Infeasible volume caused by box_occupied
       Eigen::Vector3d infeasible_box_min =
           box_occupied.first -
-          (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+          (Eigen::Vector3d::Constant(box_occupied.second) + safety_space) / 2;
       Eigen::Vector3d infeasible_box_max =
           box_occupied.first +
-          (Eigen::Vector3d::Constant(box_occupied.second) + robot_size_) / 2;
+          (Eigen::Vector3d::Constant(box_occupied.second) + safety_space) / 2;
       // Volume of free_box
       Eigen::Vector3d actual_box_min =
           free_box.first - Eigen::Vector3d::Constant(free_box.second) / 2;
@@ -908,27 +911,27 @@ void OctomapWorld::inflateOccupied() {
   Eigen::Vector3d bbx_size;
 
   bbx_size = map_size;
-  bbx_size.x() = robot_size_.x() / 2;
+  bbx_size.x() = safety_space.x() / 2;
   bbx_center = map_center;
-  bbx_center.x() = map_center.x() - map_size.x() / 2 + robot_size_.x() / 4;
+  bbx_center.x() = map_center.x() - map_size.x() / 2 + safety_space.x() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.x() = map_center.x() + map_size.x() / 2 - robot_size_.x() / 4;
+  bbx_center.x() = map_center.x() + map_size.x() / 2 - safety_space.x() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   bbx_size = map_size;
-  bbx_size.y() = robot_size_.y() / 2;
+  bbx_size.y() = safety_space.y() / 2;
   bbx_center = map_center;
-  bbx_center.y() = map_center.y() - map_size.y() / 2 + robot_size_.y() / 4;
+  bbx_center.y() = map_center.y() - map_size.y() / 2 + safety_space.y() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.y() = map_center.y() + map_size.y() / 2 - robot_size_.y() / 4;
+  bbx_center.y() = map_center.y() + map_size.y() / 2 - safety_space.y() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   bbx_size = map_size;
-  bbx_size.z() = robot_size_.z() / 2;
+  bbx_size.z() = safety_space.z() / 2;
   bbx_center = map_center;
-  bbx_center.z() = map_center.z() - map_size.z() / 2 + robot_size_.z() / 4;
+  bbx_center.z() = map_center.z() - map_size.z() / 2 + safety_space.z() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.z() = map_center.z() + map_size.z() / 2 - robot_size_.z() / 4;
+  bbx_center.z() = map_center.z() + map_size.z() / 2 - safety_space.z() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   // Set all infeasible points occupied
@@ -936,8 +939,9 @@ void OctomapWorld::inflateOccupied() {
     octree_->setNodeValue(octree_->keyToCoord(key), log_odds_value, lazy_eval);
   }
 
-  // This is necessary since lazy_eval is set to true.
-  octree_->updateInnerOccupancy();
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
   octree_->prune();
 }
 
