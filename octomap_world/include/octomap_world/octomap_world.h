@@ -195,6 +195,9 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
+  // Inflation of all obstacles to take robot_size_ into account
+  void inflateOccupied(const Eigen::Vector3d& safety_space);
+
   // Change detection -- when this is called, this resets the change detection
   // tracking within the map. So 2 consecutive calls will produce first the
   // change set, then nothing.
@@ -233,6 +236,10 @@ class OctomapWorld : public WorldBase {
                            const Eigen::Vector3d& bounding_box_size,
                            std::vector<std::pair<Eigen::Vector3d, double> >*
                                occupied_box_vector) const;
+
+  void getKeysBoundingBox(const Eigen::Vector3d &position,
+                          const Eigen::Vector3d &bounding_box_size,
+                          octomap::KeySet *keys) const;
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
