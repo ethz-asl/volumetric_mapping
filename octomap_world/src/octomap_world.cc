@@ -841,10 +841,8 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
   for (const std::pair<Eigen::Vector3d, double>& free_box : free_boxes_vector) {
 
     // In case box size implicates that the whole box is infeasible (an obstacle
-    // is at a distance of at most 2 * box_size, otherwise the pruned free box
-    // would have been bigger)
-    // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives
-    // exactly same result, just much slower...
+    // is at a distance of at most 2 * box_size (from the center of the
+    // safety_space), otherwise the pruned free box would have been bigger)
     if (free_box.second < safety_space.minCoeff() / 4 - epsilon) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
