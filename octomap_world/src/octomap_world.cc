@@ -845,7 +845,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
     // would have been bigger)
     // TODO(Sebastian) Is it really /2? Shouldn't it be /4? But doing /4 gives
     // exactly same result, just much slower...
-    if (free_box.second < safety_space.minCoeff() / 2 - epsilon) {
+    if (free_box.second < safety_space.minCoeff() / 4 - epsilon) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
                          &occupied_keys);
