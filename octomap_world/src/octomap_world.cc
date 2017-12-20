@@ -1069,9 +1069,10 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
 }
 
 bool OctomapWorld::getNearestUnoccupiedPoint(
-    const Eigen::Vector3d& position, Eigen::Vector3d* unoccupied_position) const {
-  const double epsilon = 1e-3; // Small offset to not hit boundaries
-  // Check if the given position is already free
+    const Eigen::Vector3d& position,
+    Eigen::Vector3d* unoccupied_position) const {
+  const double epsilon = 1e-3;  // Small offset to not hit boundaries
+  // Check if the given position is already unoccupied
   if (getCellStatusPoint(position) != CellStatus::kOccupied) {
     *unoccupied_position = position;
     return true;
@@ -1084,13 +1085,13 @@ bool OctomapWorld::getNearestUnoccupiedPoint(
   // there is something unoccupied
   while (free_box_vector.empty() && bbx_size < getMapSize().maxCoeff()) {
     getFreeBoxesBoundingBox(position, Eigen::Vector3d::Constant(bbx_size),
-        &free_box_vector);
+                            &free_box_vector);
     bbx_size += resolution;
   }
   if (free_box_vector.empty()) {
-    return false; // There are no free boxes in the octomap
+    return false;  // There are no free boxes in the octomap
   }
-  
+
   // Overestimate minimum distance between desired position and free position
   double min_distance = bbx_size;
   Eigen::Vector3d actual_distance;
@@ -1099,8 +1100,8 @@ bool OctomapWorld::getNearestUnoccupiedPoint(
     // Distance between center of box and position
     actual_distance = position - free_box.first;
     // Limit the distance such that it is still in the box
-    actual_distance = Eigen::Vector3d::Constant(free_box.second/2 - epsilon).cwiseMin(actual_distance);
-    actual_distance = Eigen::Vector3d::Constant(-free_box.second/2 + epsilon).cwiseMax(actual_distance);
+    actual_distance = actual_distance.cwiseMin(Eigen::Vector3d::Constant(free_box.second / 2 - epsilon));
+    actual_distance = actual_distance.cwiseMax(Eigen::Vector3d::Constant(-free_box.second / 2 + epsilon));
     // Nearest position to the desired position
     actual_nearest_position = free_box.first + actual_distance;
     // Check if this is the best position found so far
