@@ -168,8 +168,8 @@ class OctomapWorld : public WorldBase {
   virtual Eigen::Vector3d getMapSize() const;
   virtual void getMapBounds(Eigen::Vector3d* min_bound,
                             Eigen::Vector3d* max_bound) const;
-  bool getNearestUnoccupiedPoint(const Eigen::Vector3d& position,
-                                 Eigen::Vector3d* unoccupied_position) const;
+  bool getNearestFreePoint(const Eigen::Vector3d& position,
+                           Eigen::Vector3d* free_position) const;
 
   // Collision checking with robot model. Implemented as a box with our own
   // implementation.

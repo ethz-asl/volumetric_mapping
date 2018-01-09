@@ -1068,13 +1068,12 @@ void OctomapWorld::getMapBounds(Eigen::Vector3d* min_bound,
   *max_bound = Eigen::Vector3d(max_x, max_y, max_z);
 }
 
-bool OctomapWorld::getNearestUnoccupiedPoint(
-    const Eigen::Vector3d& position,
-    Eigen::Vector3d* unoccupied_position) const {
+bool OctomapWorld::getNearestFreePoint(const Eigen::Vector3d& position,
+                                       Eigen::Vector3d* free_position) const {
   const double epsilon = 1e-3;  // Small offset to not hit boundaries
   // Check if the given position is already unoccupied
-  if (getCellStatusPoint(position) != CellStatus::kOccupied) {
-    *unoccupied_position = position;
+  if (getCellStatusPoint(position) == CellStatus::kFree) {
+    *free_position = position;
     return true;
   }
 
@@ -1100,14 +1099,16 @@ bool OctomapWorld::getNearestUnoccupiedPoint(
     // Distance between center of box and position
     actual_distance = position - free_box.first;
     // Limit the distance such that it is still in the box
-    actual_distance = actual_distance.cwiseMin(Eigen::Vector3d::Constant(free_box.second / 2 - epsilon));
-    actual_distance = actual_distance.cwiseMax(Eigen::Vector3d::Constant(-free_box.second / 2 + epsilon));
+    actual_distance = actual_distance.cwiseMin(
+        Eigen::Vector3d::Constant(free_box.second / 2 - epsilon));
+    actual_distance = actual_distance.cwiseMax(
+        Eigen::Vector3d::Constant(-free_box.second / 2 + epsilon));
     // Nearest position to the desired position
     actual_nearest_position = free_box.first + actual_distance;
     // Check if this is the best position found so far
     if ((position - actual_nearest_position).norm() < min_distance) {
       min_distance = (position - actual_nearest_position).norm();
-      *unoccupied_position = actual_nearest_position;
+      *free_position = actual_nearest_position;
     }
   }
   return true;
