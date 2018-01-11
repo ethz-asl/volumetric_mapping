@@ -190,6 +190,10 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
+  // Create deep copy of OctomapWorld with unknown space converted to free
+  OctomapWorld* createOctomapWorldBinary() const;
+  bool setOcTree(std::shared_ptr<octomap::OcTree> octree);
+
   // Helpers for publishing.
   void generateMarkerArray(const std::string& tf_frame,
                            visualization_msgs::MarkerArray* occupied_nodes,

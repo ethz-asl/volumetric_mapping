@@ -715,6 +715,19 @@ bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
   return octree_->writeBinary(filename);
 }
 
+OctomapWorld* OctomapWorld::createOctomapWorldBinary() const {
+  // Create new OctomapWorld with same parameters
+  OctomapWorld* newWorld = new OctomapWorld(params_);
+  octomap::OcTree* newOcTree = octree_->create();
+  return newWorld;
+}
+
+bool OctomapWorld::setOcTree(std::shared_ptr<octomap::OcTree> octree) {
+  octree_ = octree;
+  return true;
+}
+
+
 bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
   octomap::OcTreeKey current_key;
   // Search neighbors in a +/-1 key range cube. If there are neighbors, it's
