@@ -55,6 +55,22 @@ OctomapWorld::OctomapWorld(const OctomapParameters& params)
   setOctomapParameters(params);
 }
 
+// Creates deepcopy of OctomapWorld
+OctomapWorld::OctomapWorld(const OctomapWorld& rhs) {
+  OctomapParameters params;
+  rhs.getOctomapParameters(&params);
+  setOctomapParameters(params);
+  robot_size_ = rhs.getRobotSize();
+  std::stringstream datastream;
+  rhs.writeOctomapToBinaryConst(datastream);
+  //TODO(Sebastian) Modify the datastream such that unknown space is initialized to free
+  if(!octree_->readBinary(datastream)) {
+    std::cerr << "Could not copy octree\n";
+  } else {
+    std::cout << "Copied octree succesfully\n";
+  }
+}
+
 void OctomapWorld::resetMap() {
   if (!octree_) {
     octree_.reset(new octomap::OcTree(params_.resolution));
@@ -84,6 +100,10 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
   params_ = params;
+}
+
+void OctomapWorld::getOctomapParameters(OctomapParameters* params) const {
+  *params = params_;
 }
 
 void OctomapWorld::insertPointcloudIntoMapImpl(
@@ -715,18 +735,12 @@ bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
   return octree_->writeBinary(filename);
 }
 
-OctomapWorld* OctomapWorld::createOctomapWorldBinary() const {
-  // Create new OctomapWorld with same parameters
-  OctomapWorld* newWorld = new OctomapWorld(params_);
-  octomap::OcTree* newOcTree = octree_->create();
-  return newWorld;
-}
-
-bool OctomapWorld::setOcTree(std::shared_ptr<octomap::OcTree> octree) {
-  octree_ = octree;
+bool OctomapWorld::writeOctomapToBinaryConst(std::ostream& s) const {
+  if(!octree_->writeBinaryConst(s)) {
+    return false;
+  }
   return true;
 }
-
 
 bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
   octomap::OcTreeKey current_key;

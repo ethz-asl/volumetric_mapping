@@ -111,6 +111,10 @@ class OctomapWorld : public WorldBase {
 
   // Creates an octomap with the correct parameters.
   OctomapWorld(const OctomapParameters& params);
+
+  // Deep copy of OctomapWorld
+  OctomapWorld(const OctomapWorld& rhs);
+
   virtual ~OctomapWorld() {}
 
   // General map management.
@@ -119,6 +123,7 @@ class OctomapWorld : public WorldBase {
   // Creates an octomap if one is not yet created or if the resolution of the
   // current varies from the parameters requested.
   void setOctomapParameters(const OctomapParameters& params);
+  void getOctomapParameters(OctomapParameters* params) const;
 
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(const Eigen::Vector3d& position,
@@ -190,9 +195,8 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
-  // Create deep copy of OctomapWorld with unknown space converted to free
-  OctomapWorld* createOctomapWorldBinary() const;
-  bool setOcTree(std::shared_ptr<octomap::OcTree> octree);
+  // Writing to stream
+  bool writeOctomapToBinaryConst(std::ostream& s) const;
 
   // Helpers for publishing.
   void generateMarkerArray(const std::string& tf_frame,
