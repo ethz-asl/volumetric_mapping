@@ -61,14 +61,42 @@ OctomapWorld::OctomapWorld(const OctomapWorld& rhs) {
   rhs.getOctomapParameters(&params);
   setOctomapParameters(params);
   robot_size_ = rhs.getRobotSize();
+  // std::stringstream datastream;
+  // std::stringstream datastream_modified;
+  // // Get rhs octomap binary
+  // rhs.writeOctomapToBinaryConst(datastream);
+  // // Modify the datastream such that unknown space is initialized to free
+  // char node1to4_char;
+  // while (datastream.peek() != EOF) {
+  //   datastream.read((char*)&node1to4_char, sizeof(char));
+  //   std::bitset<8> node1to4((unsigned long long)node1to4_char);
+  //   for (unsigned int i = 0; i < 4; i++) {
+  //     if ((node1to4[i * 2] == 0) && (node1to4[i * 2 + 1] == 0)) {
+  //       // if node is uninitialized, set it to free
+  //       node1to4[i * 2] = 1;
+  //     }
+  //   }
+  //   node1to4_char = (char)node1to4.to_ulong();
+  //   datastream_modified.write((char*)&node1to4_char, sizeof(char));
+  // }
+  // // Write octomap binary
+  // datastream_modified.seekg(0, datastream_modified.beg);
+  // if (!octree_->readBinaryData(datastream_modified)) {
+  //   std::cerr << "Could not copy octree\n";
+  // } else {
+  //   std::cout << "Copied octree succesfully\n";
+  // }
+
+  // Get rhs octomap binary
   std::stringstream datastream;
   rhs.writeOctomapToBinaryConst(datastream);
-  //TODO(Sebastian) Modify the datastream such that unknown space is initialized to free
-  if(!octree_->readBinary(datastream)) {
+  // Write octomap binary
+  if (!octree_->readBinary(datastream)) {
     std::cerr << "Could not copy octree\n";
   } else {
     std::cout << "Copied octree succesfully\n";
   }
+  octree_->prune();
 }
 
 void OctomapWorld::resetMap() {
@@ -736,7 +764,7 @@ bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
 }
 
 bool OctomapWorld::writeOctomapToBinaryConst(std::ostream& s) const {
-  if(!octree_->writeBinaryConst(s)) {
+  if (!octree_->writeBinaryConst(s)) {
     return false;
   }
   return true;
@@ -847,6 +875,23 @@ void OctomapWorld::generateMarkerArray(
       free_nodes->markers[i].action = visualization_msgs::Marker::DELETE;
     }
   }
+}
+
+void OctomapWorld::convertUnknownToFree() {
+  const bool lazy_eval = true;
+  const double log_odds_value = octree_->getClampingThresMinLog();
+  octomap::point3d_list unknown_leaf_centers;
+  Eigen::Vector3d min_bound, max_bound;
+  getMapBounds(&min_bound, &max_bound);
+  octomap::point3d pmin = pointEigenToOctomap(min_bound);
+  octomap::point3d pmax = pointEigenToOctomap(max_bound);
+  octree_->getUnknownLeafCenters(unknown_leaf_centers, pmin, pmax);
+  for (octomap::point3d unknown_center : unknown_leaf_centers) {
+    octree_->setNodeValue(unknown_center, log_odds_value, lazy_eval);
+  }
+  // This is necessary since lazy_eval is set to true.
+  octree_->updateInnerOccupancy();
+  octree_->prune();
 }
 
 void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {

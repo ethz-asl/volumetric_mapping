@@ -203,6 +203,8 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
+  // Convert all unknown space into free space
+  void convertUnknownToFree();
   // Inflation of all obstacles to take robot_size_ into account
   void inflateOccupied(const Eigen::Vector3d& safety_space);
 
