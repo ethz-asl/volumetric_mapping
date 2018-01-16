@@ -752,10 +752,6 @@ void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
 }
 
 bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {
-  if (!octree_) {
-    // TODO(helenol): Resolution shouldn't matter... I think. I'm not sure.
-    octree_.reset(new octomap::OcTree(0.05));
-  }
   return octree_->readBinary(filename);
 }
 
