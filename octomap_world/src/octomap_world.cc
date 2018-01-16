@@ -500,6 +500,52 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                         octree_->getClampingThresMaxLog());
 }
 
+void OctomapWorld::setBordersOccupied(const Eigen::Vector3d& cropping_size) {
+  // Crop map size by setting borders occupied
+  const bool lazy_eval = true;
+  const double log_odds_value = octree_->getClampingThresMaxLog();
+  octomap::KeySet occupied_keys;
+
+  Eigen::Vector3d map_center = getMapCenter();
+  Eigen::Vector3d map_size = getMapSize();
+  Eigen::Vector3d bbx_center;
+  Eigen::Vector3d bbx_size;
+
+  bbx_size = map_size;
+  bbx_size.x() = cropping_size.x() / 2;
+  bbx_center = map_center;
+  bbx_center.x() = map_center.x() - map_size.x() / 2 + cropping_size.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.x() = map_center.x() + map_size.x() / 2 - cropping_size.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  bbx_size = map_size;
+  bbx_size.y() = cropping_size.y() / 2;
+  bbx_center = map_center;
+  bbx_center.y() = map_center.y() - map_size.y() / 2 + cropping_size.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.y() = map_center.y() + map_size.y() / 2 - cropping_size.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  bbx_size = map_size;
+  bbx_size.z() = cropping_size.z() / 2;
+  bbx_center = map_center;
+  bbx_center.z() = map_center.z() - map_size.z() / 2 + cropping_size.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.z() = map_center.z() + map_size.z() / 2 - cropping_size.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  // Set all infeasible points occupied
+  for (octomap::OcTreeKey key : occupied_keys) {
+    octree_->setNodeValue(octree_->keyToCoord(key), log_odds_value, lazy_eval);
+  }
+
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
+  octree_->prune();
+}
+
 void OctomapWorld::getOccupiedPointCloud(
     pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
   CHECK_NOTNULL(output_cloud)->clear();
@@ -885,8 +931,9 @@ void OctomapWorld::convertUnknownToFree() {
   for (octomap::point3d unknown_center : unknown_leaf_centers) {
     octree_->setNodeValue(unknown_center, log_odds_value, lazy_eval);
   }
-  // This is necessary since lazy_eval is set to true.
-  octree_->updateInnerOccupancy();
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
   octree_->prune();
 }
 
@@ -968,37 +1015,6 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
       getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
     }
   }
-
-  // Set map boundaries infeasible
-  // TODO(Sebastian) There has to be a nicer way to do this!!
-  Eigen::Vector3d map_center = getMapCenter();
-  Eigen::Vector3d map_size = getMapSize();
-  Eigen::Vector3d bbx_center;
-  Eigen::Vector3d bbx_size;
-
-  bbx_size = map_size;
-  bbx_size.x() = safety_space.x() / 2;
-  bbx_center = map_center;
-  bbx_center.x() = map_center.x() - map_size.x() / 2 + safety_space.x() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.x() = map_center.x() + map_size.x() / 2 - safety_space.x() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-
-  bbx_size = map_size;
-  bbx_size.y() = safety_space.y() / 2;
-  bbx_center = map_center;
-  bbx_center.y() = map_center.y() - map_size.y() / 2 + safety_space.y() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.y() = map_center.y() + map_size.y() / 2 - safety_space.y() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-
-  bbx_size = map_size;
-  bbx_size.z() = safety_space.z() / 2;
-  bbx_center = map_center;
-  bbx_center.z() = map_center.z() - map_size.z() / 2 + safety_space.z() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.z() = map_center.z() + map_size.z() / 2 - safety_space.z() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   // Set all infeasible points occupied
   for (octomap::OcTreeKey key : occupied_keys) {

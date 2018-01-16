@@ -130,6 +130,7 @@ class OctomapWorld : public WorldBase {
                        const Eigen::Vector3d& bounding_box_size);
   virtual void setOccupied(const Eigen::Vector3d& position,
                            const Eigen::Vector3d& bounding_box_size);
+  virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
   // Virtual functions for outputting map status.
   virtual CellStatus getCellStatusBoundingBox(
