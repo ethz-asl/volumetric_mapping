@@ -61,40 +61,13 @@ OctomapWorld::OctomapWorld(const OctomapWorld& rhs) {
   rhs.getOctomapParameters(&params);
   setOctomapParameters(params);
   robot_size_ = rhs.getRobotSize();
-  // std::stringstream datastream;
-  // std::stringstream datastream_modified;
-  // // Get rhs octomap binary
-  // rhs.writeOctomapToBinaryConst(datastream);
-  // // Modify the datastream such that unknown space is initialized to free
-  // char node1to4_char;
-  // while (datastream.peek() != EOF) {
-  //   datastream.read((char*)&node1to4_char, sizeof(char));
-  //   std::bitset<8> node1to4((unsigned long long)node1to4_char);
-  //   for (unsigned int i = 0; i < 4; i++) {
-  //     if ((node1to4[i * 2] == 0) && (node1to4[i * 2 + 1] == 0)) {
-  //       // if node is uninitialized, set it to free
-  //       node1to4[i * 2] = 1;
-  //     }
-  //   }
-  //   node1to4_char = (char)node1to4.to_ulong();
-  //   datastream_modified.write((char*)&node1to4_char, sizeof(char));
-  // }
-  // // Write octomap binary
-  // datastream_modified.seekg(0, datastream_modified.beg);
-  // if (!octree_->readBinaryData(datastream_modified)) {
-  //   std::cerr << "Could not copy octree\n";
-  // } else {
-  //   std::cout << "Copied octree succesfully\n";
-  // }
 
   // Get rhs octomap binary
   std::stringstream datastream;
   rhs.writeOctomapToBinaryConst(datastream);
   // Write octomap binary
   if (!octree_->readBinary(datastream)) {
-    std::cerr << "Could not copy octree\n";
-  } else {
-    std::cout << "Copied octree succesfully\n";
+    std::cerr << "Could not copy octree!\n";
   }
   octree_->prune();
 }

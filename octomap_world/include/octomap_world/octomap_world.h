@@ -196,7 +196,7 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
-  // Writing to stream
+  // Writing binary octomap to stream
   bool writeOctomapToBinaryConst(std::ostream& s) const;
 
   // Helpers for publishing.
@@ -206,7 +206,7 @@ class OctomapWorld : public WorldBase {
 
   // Convert all unknown space into free space
   void convertUnknownToFree();
-  // Inflation of all obstacles to take robot_size_ into account
+  // Inflation of all obstacles by safety_space
   void inflateOccupied(const Eigen::Vector3d& safety_space);
 
   // Change detection -- when this is called, this resets the change detection
