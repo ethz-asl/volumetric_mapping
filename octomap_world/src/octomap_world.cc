@@ -895,14 +895,23 @@ void OctomapWorld::generateMarkerArray(
 void OctomapWorld::convertUnknownToFree() {
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMinLog();
-  octomap::point3d_list unknown_leaf_centers;
+  const double resolution = octree_->getResolution();
   Eigen::Vector3d min_bound, max_bound;
   getMapBounds(&min_bound, &max_bound);
   octomap::point3d pmin = pointEigenToOctomap(min_bound);
   octomap::point3d pmax = pointEigenToOctomap(max_bound);
-  octree_->getUnknownLeafCenters(unknown_leaf_centers, pmin, pmax);
-  for (octomap::point3d unknown_center : unknown_leaf_centers) {
-    octree_->setNodeValue(unknown_center, log_odds_value, lazy_eval);
+  // octree_->getUnknownLeafCenters would have been easier, but it doesn't get
+  // all the unknown points for some reason
+  for (float x = pmin.x() + resolution / 2; x < pmax.x(); x += resolution) {
+    for (float y = pmin.y() + resolution / 2; y < pmax.y(); y += resolution) {
+      for (float z = pmin.z() + resolution / 2; z < pmax.z(); z += resolution) {
+        octomap::OcTree::NodeType* res = octree_->search(x, y, z);
+        if (res == NULL) {
+          // Point is unknown, set it free
+          octree_->setNodeValue(x, y, z, log_odds_value, lazy_eval);
+        }
+      }
+    }
   }
   if (lazy_eval) {
     octree_->updateInnerOccupancy();
