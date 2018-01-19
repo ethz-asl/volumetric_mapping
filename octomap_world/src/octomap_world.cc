@@ -779,10 +779,7 @@ bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
 }
 
 bool OctomapWorld::writeOctomapToBinaryConst(std::ostream& s) const {
-  if (!octree_->writeBinaryConst(s)) {
-    return false;
-  }
-  return true;
+  return octree_->writeBinaryConst(s);
 }
 
 bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {

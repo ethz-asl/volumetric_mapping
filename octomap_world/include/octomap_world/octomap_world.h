@@ -112,7 +112,7 @@ class OctomapWorld : public WorldBase {
   // Creates an octomap with the correct parameters.
   OctomapWorld(const OctomapParameters& params);
 
-  // Deep copy of OctomapWorld
+  // Deep copy of OctomapWorld rhs
   OctomapWorld(const OctomapWorld& rhs);
 
   virtual ~OctomapWorld() {}
