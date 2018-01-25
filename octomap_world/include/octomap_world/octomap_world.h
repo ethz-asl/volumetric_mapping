@@ -111,6 +111,10 @@ class OctomapWorld : public WorldBase {
 
   // Creates an octomap with the correct parameters.
   OctomapWorld(const OctomapParameters& params);
+
+  // Deep copy of OctomapWorld rhs
+  OctomapWorld(const OctomapWorld& rhs);
+
   virtual ~OctomapWorld() {}
 
   // General map management.
@@ -119,12 +123,14 @@ class OctomapWorld : public WorldBase {
   // Creates an octomap if one is not yet created or if the resolution of the
   // current varies from the parameters requested.
   void setOctomapParameters(const OctomapParameters& params);
+  void getOctomapParameters(OctomapParameters* params) const;
 
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(const Eigen::Vector3d& position,
                        const Eigen::Vector3d& bounding_box_size);
   virtual void setOccupied(const Eigen::Vector3d& position,
                            const Eigen::Vector3d& bounding_box_size);
+  virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
   // Virtual functions for outputting map status.
   virtual CellStatus getCellStatusBoundingBox(
@@ -192,12 +198,17 @@ class OctomapWorld : public WorldBase {
   bool loadOctomapFromFile(const std::string& filename);
   bool writeOctomapToFile(const std::string& filename);
 
+  // Writing binary octomap to stream
+  bool writeOctomapToBinaryConst(std::ostream& s) const;
+
   // Helpers for publishing.
   void generateMarkerArray(const std::string& tf_frame,
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
-  // Inflation of all obstacles to take robot_size_ into account
+  // Convert all unknown space into free space
+  void convertUnknownToFree();
+  // Inflation of all obstacles by safety_space
   void inflateOccupied(const Eigen::Vector3d& safety_space);
 
   // Change detection -- when this is called, this resets the change detection

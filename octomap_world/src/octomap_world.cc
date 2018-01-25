@@ -55,6 +55,23 @@ OctomapWorld::OctomapWorld(const OctomapParameters& params)
   setOctomapParameters(params);
 }
 
+// Creates deepcopy of OctomapWorld
+OctomapWorld::OctomapWorld(const OctomapWorld& rhs) {
+  OctomapParameters params;
+  rhs.getOctomapParameters(&params);
+  setOctomapParameters(params);
+  robot_size_ = rhs.getRobotSize();
+
+  // Get rhs octomap binary
+  std::stringstream datastream;
+  rhs.writeOctomapToBinaryConst(datastream);
+  // Write octomap binary
+  if (!octree_->readBinary(datastream)) {
+    std::cerr << "Could not copy octree!\n";
+  }
+  octree_->prune();
+}
+
 void OctomapWorld::resetMap() {
   if (!octree_) {
     octree_.reset(new octomap::OcTree(params_.resolution));
@@ -84,6 +101,10 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
   params_ = params;
+}
+
+void OctomapWorld::getOctomapParameters(OctomapParameters* params) const {
+  *params = params_;
 }
 
 void OctomapWorld::insertPointcloudIntoMapImpl(
@@ -452,6 +473,52 @@ void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                         octree_->getClampingThresMaxLog());
 }
 
+void OctomapWorld::setBordersOccupied(const Eigen::Vector3d& cropping_size) {
+  // Crop map size by setting borders occupied
+  const bool lazy_eval = true;
+  const double log_odds_value = octree_->getClampingThresMaxLog();
+  octomap::KeySet occupied_keys;
+
+  Eigen::Vector3d map_center = getMapCenter();
+  Eigen::Vector3d map_size = getMapSize();
+  Eigen::Vector3d bbx_center;
+  Eigen::Vector3d bbx_size;
+
+  bbx_size = map_size;
+  bbx_size.x() = cropping_size.x() / 2;
+  bbx_center = map_center;
+  bbx_center.x() = map_center.x() - map_size.x() / 2 + cropping_size.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.x() = map_center.x() + map_size.x() / 2 - cropping_size.x() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  bbx_size = map_size;
+  bbx_size.y() = cropping_size.y() / 2;
+  bbx_center = map_center;
+  bbx_center.y() = map_center.y() - map_size.y() / 2 + cropping_size.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.y() = map_center.y() + map_size.y() / 2 - cropping_size.y() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  bbx_size = map_size;
+  bbx_size.z() = cropping_size.z() / 2;
+  bbx_center = map_center;
+  bbx_center.z() = map_center.z() - map_size.z() / 2 + cropping_size.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+  bbx_center.z() = map_center.z() + map_size.z() / 2 - cropping_size.z() / 4;
+  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
+
+  // Set all infeasible points occupied
+  for (octomap::OcTreeKey key : occupied_keys) {
+    octree_->setNodeValue(octree_->keyToCoord(key), log_odds_value, lazy_eval);
+  }
+
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
+  octree_->prune();
+}
+
 void OctomapWorld::getOccupiedPointCloud(
     pcl::PointCloud<pcl::PointXYZ>* output_cloud) const {
   CHECK_NOTNULL(output_cloud)->clear();
@@ -704,15 +771,15 @@ void OctomapWorld::setOctomapFromFullMsg(const octomap_msgs::Octomap& msg) {
 }
 
 bool OctomapWorld::loadOctomapFromFile(const std::string& filename) {
-  if (!octree_) {
-    // TODO(helenol): Resolution shouldn't matter... I think. I'm not sure.
-    octree_.reset(new octomap::OcTree(0.05));
-  }
   return octree_->readBinary(filename);
 }
 
 bool OctomapWorld::writeOctomapToFile(const std::string& filename) {
   return octree_->writeBinary(filename);
+}
+
+bool OctomapWorld::writeOctomapToBinaryConst(std::ostream& s) const {
+  return octree_->writeBinaryConst(s);
 }
 
 bool OctomapWorld::isSpeckleNode(const octomap::OcTreeKey& key) const {
@@ -822,6 +889,33 @@ void OctomapWorld::generateMarkerArray(
   }
 }
 
+void OctomapWorld::convertUnknownToFree() {
+  const bool lazy_eval = true;
+  const double log_odds_value = octree_->getClampingThresMinLog();
+  const double resolution = octree_->getResolution();
+  Eigen::Vector3d min_bound, max_bound;
+  getMapBounds(&min_bound, &max_bound);
+  octomap::point3d pmin = pointEigenToOctomap(min_bound);
+  octomap::point3d pmax = pointEigenToOctomap(max_bound);
+  // octree_->getUnknownLeafCenters would have been easier, but it doesn't get
+  // all the unknown points for some reason
+  for (float x = pmin.x() + resolution / 2; x < pmax.x(); x += resolution) {
+    for (float y = pmin.y() + resolution / 2; y < pmax.y(); y += resolution) {
+      for (float z = pmin.z() + resolution / 2; z < pmax.z(); z += resolution) {
+        octomap::OcTree::NodeType* res = octree_->search(x, y, z);
+        if (res == NULL) {
+          // Point is unknown, set it free
+          octree_->setNodeValue(x, y, z, log_odds_value, lazy_eval);
+        }
+      }
+    }
+  }
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
+  octree_->prune();
+}
+
 void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
   // Inflate all obstacles by safety_space, such that if a collision free
   // trajectory is generated in this new space, it is guaranteed that
@@ -900,37 +994,6 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
       getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
     }
   }
-
-  // Set map boundaries infeasible
-  // TODO(Sebastian) There has to be a nicer way to do this!!
-  Eigen::Vector3d map_center = getMapCenter();
-  Eigen::Vector3d map_size = getMapSize();
-  Eigen::Vector3d bbx_center;
-  Eigen::Vector3d bbx_size;
-
-  bbx_size = map_size;
-  bbx_size.x() = safety_space.x() / 2;
-  bbx_center = map_center;
-  bbx_center.x() = map_center.x() - map_size.x() / 2 + safety_space.x() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.x() = map_center.x() + map_size.x() / 2 - safety_space.x() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-
-  bbx_size = map_size;
-  bbx_size.y() = safety_space.y() / 2;
-  bbx_center = map_center;
-  bbx_center.y() = map_center.y() - map_size.y() / 2 + safety_space.y() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.y() = map_center.y() + map_size.y() / 2 - safety_space.y() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-
-  bbx_size = map_size;
-  bbx_size.z() = safety_space.z() / 2;
-  bbx_center = map_center;
-  bbx_center.z() = map_center.z() - map_size.z() / 2 + safety_space.z() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
-  bbx_center.z() = map_center.z() + map_size.z() / 2 - safety_space.z() / 4;
-  getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys);
 
   // Set all infeasible points occupied
   for (octomap::OcTreeKey key : occupied_keys) {
