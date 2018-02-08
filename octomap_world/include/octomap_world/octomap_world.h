@@ -128,7 +128,11 @@ class OctomapWorld : public WorldBase {
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(const Eigen::Vector3d& position,
                        const Eigen::Vector3d& bounding_box_size);
+  virtual void setFree(const std::vector<Eigen::Vector3d>& positions,
+                       const Eigen::Vector3d& bounding_box_size);
   virtual void setOccupied(const Eigen::Vector3d& position,
+                           const Eigen::Vector3d& bounding_box_size);
+  virtual void setOccupied(const std::vector<Eigen::Vector3d>& positions,
                            const Eigen::Vector3d& bounding_box_size);
   virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
@@ -218,6 +222,8 @@ class OctomapWorld : public WorldBase {
   // occupied, 0 is free.
   // IMPORTANT NOTE: change_detection MUST be set to true in the parameters in
   // order for this to work!
+  void enableChangeDetection() {octree_->enableChangeDetection(true);}
+  void disableChangeDetection() {octree_->enableChangeDetection(false);}
   void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
                         std::vector<bool>* changed_states);
 
@@ -239,6 +245,9 @@ class OctomapWorld : public WorldBase {
 
   // Manually affect the probabilities of areas within a bounding box.
   void setLogOddsBoundingBox(const Eigen::Vector3d& position,
+                             const Eigen::Vector3d& bounding_box_size,
+                             double log_odds_value);
+  void setLogOddsBoundingBox(const std::vector<Eigen::Vector3d>& positions,
                              const Eigen::Vector3d& bounding_box_size,
                              double log_odds_value);
 
