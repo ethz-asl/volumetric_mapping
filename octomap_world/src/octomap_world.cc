@@ -462,27 +462,31 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
 double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
 void OctomapWorld::setFree(const Eigen::Vector3d& position,
-                           const Eigen::Vector3d& bounding_box_size) {
+                           const Eigen::Vector3d& bounding_box_size,
+                           const insertionMethod& insertion_method) {
   setLogOddsBoundingBox(position, bounding_box_size,
-                        octree_->getClampingThresMinLog());
+                        octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setFree(const std::vector<Eigen::Vector3d>& positions,
-                           const Eigen::Vector3d& bounding_box_size) {
+                           const Eigen::Vector3d& bounding_box_size,
+                           const insertionMethod& insertion_method) {
   setLogOddsBoundingBox(positions, bounding_box_size,
-                        octree_->getClampingThresMinLog());
+                        octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
-                               const Eigen::Vector3d& bounding_box_size) {
+                               const Eigen::Vector3d& bounding_box_size,
+                               const insertionMethod& insertion_method) {
   setLogOddsBoundingBox(position, bounding_box_size,
-                        octree_->getClampingThresMaxLog());
+                        octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setOccupied(const std::vector<Eigen::Vector3d>& positions,
-                               const Eigen::Vector3d& bounding_box_size) {
+                               const Eigen::Vector3d& bounding_box_size,
+                               const insertionMethod& insertion_method) {
   setLogOddsBoundingBox(positions, bounding_box_size,
-                        octree_->getClampingThresMaxLog());
+                        octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setBordersOccupied(const Eigen::Vector3d& cropping_size) {
@@ -730,44 +734,115 @@ void OctomapWorld::getBoxesBoundingBox(
 
 void OctomapWorld::setLogOddsBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-    double log_odds_value) {
-  const bool lazy_eval = true;
-  const double resolution = octree_->getResolution();
-  const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
-  Eigen::Vector3d epsilon_3d;
-  epsilon_3d.setConstant(epsilon);
-
-  Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
-  Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
-
-  for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
-       x_position += resolution) {
-    for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
-         y_position += resolution) {
-      for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
-           z_position += resolution) {
-        octomap::point3d point =
-            octomap::point3d(x_position, y_position, z_position);
-        octree_->setNodeValue(point, log_odds_value, lazy_eval);
-      }
-    }
-  }
-  // This is necessary since lazy_eval is set to true.
-  octree_->updateInnerOccupancy();
+    double log_odds_value, const insertionMethod& insertion_method) {
+  std::vector<Eigen::Vector3d> positions;
+  positions.push_back(position);
+  std::cout << "created positions vector of size " << positions.size() << "\n";
+  setLogOddsBoundingBox(positions, bounding_box_size, log_odds_value,
+                        insertion_method);
+  // const bool lazy_eval = true;
+  // const double resolution = octree_->getResolution();
+  // Eigen::Vector3d resolution_3d;
+  // resolution_3d.setConstant(resolution);
+  // const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  // Eigen::Vector3d epsilon_3d;
+  // epsilon_3d.setConstant(epsilon);
+  //
+  // Eigen::Vector3d bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+  // Eigen::Vector3d bbx_max = position + bounding_box_size / 2 + epsilon_3d;
+  //
+  // if (insertion_method == insertionMethod::kSetPartialBoxes) {
+  //   std::cout << "CHOSE kSetPartialBoxes\n";
+  //   // Align positions to the center of the octree boxes
+  //   octomap::OcTreeKey bbx_min_key =
+  //       octree_->coordToKey(pointEigenToOctomap(bbx_min));
+  //   octomap::OcTreeKey bbx_max_key =
+  //       octree_->coordToKey(pointEigenToOctomap(bbx_max));
+  //   bbx_min = pointOctomapToEigen(octree_->keyToCoord(bbx_min_key));
+  //   bbx_max = pointOctomapToEigen(octree_->keyToCoord(bbx_max_key));
+  //   // Add small offset so that all boxes are considered in the for-loops
+  //   bbx_min -= epsilon_3d;
+  //   bbx_max += epsilon_3d;
+  // }
+  //
+  // if (insertion_method == insertionMethod::kIgnorePartialBoxes) {
+  //   std::cout << "CHOSE kIgnorePartialBoxes\n";
+  //   // Align positions to the center of the octree boxes
+  //   octomap::OcTreeKey bbx_min_key =
+  //       octree_->coordToKey(pointEigenToOctomap(bbx_min));
+  //   octomap::OcTreeKey bbx_max_key =
+  //       octree_->coordToKey(pointEigenToOctomap(bbx_max));
+  //   bbx_min = pointOctomapToEigen(octree_->keyToCoord(bbx_min_key));
+  //   bbx_max = pointOctomapToEigen(octree_->keyToCoord(bbx_max_key));
+  //   // Crop bounding box so that it excludes the partially included boxes
+  //   bbx_min += resolution_3d;
+  //   bbx_max -= resolution_3d;
+  //   // Add small offset so that all boxes are considered in the for-loops
+  //   bbx_min -= epsilon_3d;
+  //   bbx_max += epsilon_3d;
+  // }
+  //
+  // for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
+  //      x_position += resolution) {
+  //   for (double y_position = bbx_min.y(); y_position <= bbx_max.y();
+  //        y_position += resolution) {
+  //     for (double z_position = bbx_min.z(); z_position <= bbx_max.z();
+  //          z_position += resolution) {
+  //       octomap::point3d point =
+  //           octomap::point3d(x_position, y_position, z_position);
+  //       octree_->setNodeValue(point, log_odds_value, lazy_eval);
+  //     }
+  //   }
+  // }
+  // // This is necessary since lazy_eval is set to true.
+  // octree_->updateInnerOccupancy();
 }
 
 void OctomapWorld::setLogOddsBoundingBox(
     const std::vector<Eigen::Vector3d>& positions,
-    const Eigen::Vector3d& bounding_box_size, double log_odds_value) {
+    const Eigen::Vector3d& bounding_box_size, double log_odds_value,
+    const insertionMethod& insertion_method) {
+      std::cout << "have got " << positions.size() << " positions to set\n";
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
+  Eigen::Vector3d resolution_3d;
+  resolution_3d.setConstant(resolution);
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
   for (Eigen::Vector3d position : positions) {
-    Eigen::Vector3d bbx_min = position - bounding_box_size / 2 + epsilon_3d;
-    Eigen::Vector3d bbx_max = position + bounding_box_size / 2 - epsilon_3d;
+    Eigen::Vector3d bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+    Eigen::Vector3d bbx_max = position + bounding_box_size / 2 + epsilon_3d;
+
+    if (insertion_method == insertionMethod::kSetPartialBoxes) {
+      // Align positions to the center of the octree boxes
+      octomap::OcTreeKey bbx_min_key =
+          octree_->coordToKey(pointEigenToOctomap(bbx_min));
+      octomap::OcTreeKey bbx_max_key =
+          octree_->coordToKey(pointEigenToOctomap(bbx_max));
+      bbx_min = pointOctomapToEigen(octree_->keyToCoord(bbx_min_key));
+      bbx_max = pointOctomapToEigen(octree_->keyToCoord(bbx_max_key));
+      // Add small offset so that all boxes are considered in the for-loops
+      bbx_min -= epsilon_3d;
+      bbx_max += epsilon_3d;
+    }
+
+    if (insertion_method == insertionMethod::kIgnorePartialBoxes) {
+      // Align positions to the center of the octree boxes
+      octomap::OcTreeKey bbx_min_key =
+          octree_->coordToKey(pointEigenToOctomap(bbx_min));
+      octomap::OcTreeKey bbx_max_key =
+          octree_->coordToKey(pointEigenToOctomap(bbx_max));
+      bbx_min = pointOctomapToEigen(octree_->keyToCoord(bbx_min_key));
+      bbx_max = pointOctomapToEigen(octree_->keyToCoord(bbx_max_key));
+      // Crop bounding box so that it excludes the partially included boxes
+      bbx_min += resolution_3d;
+      bbx_max -= resolution_3d;
+      // Add small offset so that all boxes are considered in the for-loops
+      bbx_min -= epsilon_3d;
+      bbx_max += epsilon_3d;
+    }
 
     for (double x_position = bbx_min.x(); x_position <= bbx_max.x();
          x_position += resolution) {

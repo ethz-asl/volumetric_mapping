@@ -40,6 +40,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace volumetric_mapping {
 
+// Different behaviours for setting log_odds_value in a bounding box
+enum insertionMethod {
+  // kDefault: simply use
+  kDefault,
+  // kSetPartialBoxes: set value also for boxes that are only partially included
+  // in the bounding box
+  kSetPartialBoxes,
+  // kIgnorePartialBoxes: consider only the boxes that are fully included in the
+  // bounding box
+  kIgnorePartialBoxes
+};
+
 struct OctomapParameters {
   OctomapParameters()
       : resolution(0.15),
@@ -126,14 +138,20 @@ class OctomapWorld : public WorldBase {
   void getOctomapParameters(OctomapParameters* params) const;
 
   // Virtual functions for manually manipulating map probabilities.
-  virtual void setFree(const Eigen::Vector3d& position,
-                       const Eigen::Vector3d& bounding_box_size);
-  virtual void setFree(const std::vector<Eigen::Vector3d>& positions,
-                       const Eigen::Vector3d& bounding_box_size);
-  virtual void setOccupied(const Eigen::Vector3d& position,
-                           const Eigen::Vector3d& bounding_box_size);
-  virtual void setOccupied(const std::vector<Eigen::Vector3d>& positions,
-                           const Eigen::Vector3d& bounding_box_size);
+  virtual void setFree(
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
+  virtual void setFree(
+      const std::vector<Eigen::Vector3d>& positions,
+      const Eigen::Vector3d& bounding_box_size,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
+  virtual void setOccupied(
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
+  virtual void setOccupied(
+      const std::vector<Eigen::Vector3d>& positions,
+      const Eigen::Vector3d& bounding_box_size,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
   virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
   // Virtual functions for outputting map status.
@@ -244,12 +262,14 @@ class OctomapWorld : public WorldBase {
   bool isSpeckleNode(const octomap::OcTreeKey& key) const;
 
   // Manually affect the probabilities of areas within a bounding box.
-  void setLogOddsBoundingBox(const Eigen::Vector3d& position,
-                             const Eigen::Vector3d& bounding_box_size,
-                             double log_odds_value);
-  void setLogOddsBoundingBox(const std::vector<Eigen::Vector3d>& positions,
-                             const Eigen::Vector3d& bounding_box_size,
-                             double log_odds_value);
+  void setLogOddsBoundingBox(
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+      double log_odds_value,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
+  void setLogOddsBoundingBox(
+      const std::vector<Eigen::Vector3d>& positions,
+      const Eigen::Vector3d& bounding_box_size, double log_odds_value,
+      const insertionMethod& insertion_method = insertionMethod::kDefault);
 
   void getAllBoxes(bool occupied_boxes,
                    std::vector<std::pair<Eigen::Vector3d, double> >* box_vector)
