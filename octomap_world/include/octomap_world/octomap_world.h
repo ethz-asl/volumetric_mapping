@@ -242,8 +242,8 @@ class OctomapWorld : public WorldBase {
   // occupied, 0 is free.
   // IMPORTANT NOTE: change_detection MUST be set to true in the parameters in
   // order for this to work!
-  void enableChangeDetection() {octree_->enableChangeDetection(true);}
-  void disableChangeDetection() {octree_->enableChangeDetection(false);}
+  void enableChangeDetection() { octree_->enableChangeDetection(true); }
+  void disableChangeDetection() { octree_->enableChangeDetection(false); }
   void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
                         std::vector<bool>* changed_states);
 
@@ -273,9 +273,9 @@ class OctomapWorld : public WorldBase {
       const Eigen::Vector3d& bounding_box_size, double log_odds_value,
       const insertionMethod& insertion_method = insertionMethod::kDefault);
 
-  void getAllBoxes(bool occupied_boxes,
-                   std::vector<std::pair<Eigen::Vector3d, double> >* box_vector)
-      const;
+  void getAllBoxes(
+      bool occupied_boxes,
+      std::vector<std::pair<Eigen::Vector3d, double> >* box_vector) const;
   void getBoxesBoundingBox(bool occupied_boxes, const Eigen::Vector3d& position,
                            const Eigen::Vector3d& bounding_box_size,
                            std::vector<std::pair<Eigen::Vector3d, double> >*

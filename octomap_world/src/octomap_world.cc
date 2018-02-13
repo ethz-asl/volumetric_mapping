@@ -761,7 +761,6 @@ void OctomapWorld::setLogOddsBoundingBox(
   Eigen::Vector3d bbx_min, bbx_max;
 
   for (Eigen::Vector3d position : positions) {
-
     adjustBoundingBox(position, bounding_box_size, insertion_method, &bbx_min,
                       &bbx_max);
 
@@ -1048,7 +1047,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
 void OctomapWorld::getKeysBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
     octomap::KeySet* keys, const insertionMethod& insertion_method) const {
-      const double resolution = octree_->getResolution();
+  const double resolution = octree_->getResolution();
   Eigen::Vector3d bbx_min, bbx_max;
   adjustBoundingBox(position, bounding_box_size, insertion_method, &bbx_min,
                     &bbx_max);
