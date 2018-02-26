@@ -1,0 +1,4 @@
+---
+int32 size
+geometry_msgs/Vector3[] changed_points
+bool[] changed_states

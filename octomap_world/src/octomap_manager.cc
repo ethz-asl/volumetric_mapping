@@ -214,6 +214,13 @@ void OctomapManager::advertiseServices() {
       "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
   set_display_bounds_service_ = nh_private_.advertiseService(
       "set_display_bounds", &OctomapManager::setDisplayBoundsCallback, this);
+  bool change_detection_enabled;
+  nh_private_.param("change_detection_enabled", change_detection_enabled,
+                    false);
+  if (change_detection_enabled) {
+    get_changed_points_service_ = nh_.advertiseService(
+        "get_changed_points", &OctomapManager::getChangedPointsCallback, this);
+  }
 }
 
 void OctomapManager::advertisePublishers() {
@@ -380,6 +387,28 @@ bool OctomapManager::setDisplayBoundsCallback(
   params_.visualize_min_z = request.min_z;
   params_.visualize_max_z = request.max_z;
   publishAll();
+  return true;
+}
+
+bool OctomapManager::getChangedPointsCallback(
+    volumetric_msgs::GetChangedPoints::Request& request,
+    volumetric_msgs::GetChangedPoints::Response& response) {
+  std::vector<Eigen::Vector3d> changed_points;
+  std::vector<bool> changed_states;
+  getChangedPoints(&changed_points, &changed_states);
+  if (changed_points.size() != changed_states.size()) {
+    std::cerr << "In getChangedPointsCallback changed_points and "
+                 "changed_states have different size!\n";
+    return false;
+  }
+  int size = changed_points.size();
+  response.size = size;
+  response.changed_points.resize(size);
+  response.changed_states.resize(size);
+  for (int i = 0; i < size; ++i) {
+    tf::vectorKindrToMsg(changed_points[i], &(response.changed_points[i]));
+    response.changed_states[i] = changed_states[i];
+  }
   return true;
 }
 

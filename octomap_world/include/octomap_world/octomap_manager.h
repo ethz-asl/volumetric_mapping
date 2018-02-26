@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
+#include <volumetric_msgs/GetChangedPoints.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -93,6 +94,10 @@ class OctomapManager : public OctomapWorld {
   bool setDisplayBoundsCallback(
       volumetric_msgs::SetDisplayBounds::Request& request,
       volumetric_msgs::SetDisplayBounds::Response& response);
+
+  bool getChangedPointsCallback(
+      volumetric_msgs::GetChangedPoints::Request& request,
+      volumetric_msgs::GetChangedPoints::Response& response);
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
@@ -167,6 +172,7 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer save_point_cloud_service_;
   ros::ServiceServer set_box_occupancy_service_;
   ros::ServiceServer set_display_bounds_service_;
+  ros::ServiceServer get_changed_points_service_;
 
   // Keep state of the cameras.
   sensor_msgs::CameraInfoPtr left_info_;
