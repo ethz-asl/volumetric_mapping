@@ -172,6 +172,8 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer save_point_cloud_service_;
   ros::ServiceServer set_box_occupancy_service_;
   ros::ServiceServer set_display_bounds_service_;
+  // IMPORTANT NOTE: change_detection MUST be enabled in order for this to work!
+  // Otherwise it just gives 0 changed points.
   ros::ServiceServer get_changed_points_service_;
 
   // Keep state of the cameras.

@@ -214,13 +214,8 @@ void OctomapManager::advertiseServices() {
       "set_box_occupancy", &OctomapManager::setBoxOccupancyCallback, this);
   set_display_bounds_service_ = nh_private_.advertiseService(
       "set_display_bounds", &OctomapManager::setDisplayBoundsCallback, this);
-  bool change_detection_enabled;
-  nh_private_.param("change_detection_enabled", change_detection_enabled,
-                    false);
-  if (change_detection_enabled) {
-    get_changed_points_service_ = nh_.advertiseService(
-        "get_changed_points", &OctomapManager::getChangedPointsCallback, this);
-  }
+  get_changed_points_service_ = nh_private_.advertiseService(
+      "get_changed_points", &OctomapManager::getChangedPointsCallback, this);
 }
 
 void OctomapManager::advertisePublishers() {
