@@ -41,14 +41,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace volumetric_mapping {
 
 // Different behaviours for setting log_odds_value in a bounding box
-enum insertionMethod {
-  // kDefault: simply use
+enum boundHandling {
   kDefault,
-  // kSetPartialBoxes: set value also for boxes that are only partially included
-  // in the bounding box
-  kSetPartialBoxes,
-  // kIgnorePartialBoxes: consider only the boxes that are fully included in the
-  // bounding box
+  // kIncludePartialBoxes: consider also boxes that are only partially included
+  // in bounding box.
+  kIncludePartialBoxes,
+  // kIgnorePartialBoxes: consider only boxes that are fully included in
+  // bounding box.
   kIgnorePartialBoxes
 };
 
@@ -140,18 +139,18 @@ class OctomapWorld : public WorldBase {
   // Virtual functions for manually manipulating map probabilities.
   virtual void setFree(
       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
   virtual void setFree(
       const std::vector<Eigen::Vector3d>& positions,
       const Eigen::Vector3d& bounding_box_size,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
   virtual void setOccupied(
       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
   virtual void setOccupied(
       const std::vector<Eigen::Vector3d>& positions,
       const Eigen::Vector3d& bounding_box_size,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
   virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
   // Virtual functions for outputting map status.
@@ -174,8 +173,7 @@ class OctomapWorld : public WorldBase {
   virtual void getOccupiedPointcloudInBoundingBox(
       const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
       pcl::PointCloud<pcl::PointXYZ>* output_cloud,
-      const insertionMethod& insertion_method =
-          insertionMethod::kDefault) const;
+      const boundHandling& insertion_method = boundHandling::kDefault) const;
 
   // Structure: vector of pairs, key is the cube center and double is the
   // dimension of each side.
@@ -232,7 +230,7 @@ class OctomapWorld : public WorldBase {
 
   // Convert all unknown space into free space.
   void convertUnknownToFree();
-  // Convert unknown space between min_bound and max_bound into free.
+  // Convert unknown space between min_bound and max_bound into free space.
   void convertUnknownToFree(const Eigen::Vector3d& min_bound,
                             const Eigen::Vector3d& max_bound);
   // Inflation of all obstacles by safety_space.
@@ -245,10 +243,10 @@ class OctomapWorld : public WorldBase {
   // occupied, 0 is free.
   // IMPORTANT NOTE: change_detection MUST be set to true in the parameters in
   // order for this to work!
-  void enableChangeDetection() { octree_->enableChangeDetection(true); }
-  void disableChangeDetection() { octree_->enableChangeDetection(false); }
   void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
                         std::vector<bool>* changed_states);
+  void enableChangeDetection() { octree_->enableChangeDetection(true); }
+  void disableChangeDetection() { octree_->enableChangeDetection(false); }
 
   void coordToKey(const Eigen::Vector3d& coord, octomap::OcTreeKey* key) const;
   void keyToCoord(const octomap::OcTreeKey& key, Eigen::Vector3d* coord) const;
@@ -270,11 +268,11 @@ class OctomapWorld : public WorldBase {
   void setLogOddsBoundingBox(
       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
       double log_odds_value,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
   void setLogOddsBoundingBox(
       const std::vector<Eigen::Vector3d>& positions,
       const Eigen::Vector3d& bounding_box_size, double log_odds_value,
-      const insertionMethod& insertion_method = insertionMethod::kDefault);
+      const boundHandling& insertion_method = boundHandling::kDefault);
 
   void getAllBoxes(
       bool occupied_boxes,
@@ -284,16 +282,15 @@ class OctomapWorld : public WorldBase {
                            std::vector<std::pair<Eigen::Vector3d, double> >*
                                occupied_box_vector) const;
 
-  void getKeysBoundingBox(const Eigen::Vector3d& position,
-                          const Eigen::Vector3d& bounding_box_size,
-                          octomap::KeySet* keys,
-                          const insertionMethod& insertion_method =
-                              insertionMethod::kDefault) const;
+  void getKeysBoundingBox(
+      const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+      octomap::KeySet* keys,
+      const boundHandling& insertion_method = boundHandling::kDefault) const;
 
   // Helper function to align bounding_box
   void adjustBoundingBox(const Eigen::Vector3d& position,
                          const Eigen::Vector3d& bounding_box_size,
-                         const insertionMethod& insertion_method,
+                         const boundHandling& insertion_method,
                          Eigen::Vector3d* bbx_min,
                          Eigen::Vector3d* bbx_max) const;
 

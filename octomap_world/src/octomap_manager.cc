@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "octomap_world/octomap_manager.h"
 
 #include <glog/logging.h>
-#include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_msg.h>
+#include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
@@ -276,10 +276,11 @@ void OctomapManager::publishAll() {
   if (use_tf_transforms_ && nearest_obstacle_pub_.getNumSubscribers() > 0) {
     Transformation robot_to_world;
     if (lookupTransformTf(robot_frame_, world_frame_, ros::Time::now(),
-                      &robot_to_world)) {
+                          &robot_to_world)) {
       Eigen::Vector3d robot_center = robot_to_world.getPosition();
       pcl::PointCloud<pcl::PointXYZ> point_cloud;
-      getOccupiedPointcloudInBoundingBox(robot_center, robot_size_, &point_cloud);
+      getOccupiedPointcloudInBoundingBox(robot_center, robot_size_,
+                                         &point_cloud);
       sensor_msgs::PointCloud2 cloud;
       pcl::toROSMsg(point_cloud, cloud);
       cloud.header.frame_id = world_frame_;
@@ -312,17 +313,17 @@ bool OctomapManager::getOctomapCallback(
 bool OctomapManager::loadOctomapCallback(
     volumetric_msgs::LoadMap::Request& request,
     volumetric_msgs::LoadMap::Response& response) {
-  std::string extension = request.file_path.substr(
-      request.file_path.find_last_of(".") + 1);
+  std::string extension =
+      request.file_path.substr(request.file_path.find_last_of(".") + 1);
   if (extension == "bt") {
     return loadOctomapFromFile(request.file_path);
   } else {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZ>);
     if (extension == "pcd") {
-      pcl::io::loadPCDFile < pcl::PointXYZ > (request.file_path, *cloud);
+      pcl::io::loadPCDFile<pcl::PointXYZ>(request.file_path, *cloud);
     } else if (extension == "ply") {
-      pcl::io::loadPLYFile < pcl::PointXYZ > (request.file_path, *cloud);
+      pcl::io::loadPLYFile<pcl::PointXYZ>(request.file_path, *cloud);
     } else {
       ROS_ERROR_STREAM(
           "No known file extension (.bt, .pcd, .ply): " << request.file_path);

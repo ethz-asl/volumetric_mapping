@@ -30,19 +30,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 #define OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 
-#include <glog/logging.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include "octomap_world/octomap_world.h"
 
 #include <octomap_msgs/GetOctomap.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
+#include <volumetric_msgs/GetChangedPoints.h>
 #include <volumetric_msgs/LoadMap.h>
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
 #include <volumetric_msgs/SetDisplayBounds.h>
-#include <volumetric_msgs/GetChangedPoints.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 
