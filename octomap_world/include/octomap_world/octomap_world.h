@@ -230,9 +230,12 @@ class OctomapWorld : public WorldBase {
                            visualization_msgs::MarkerArray* occupied_nodes,
                            visualization_msgs::MarkerArray* free_nodes);
 
-  // Convert all unknown space into free space
+  // Convert all unknown space into free space.
   void convertUnknownToFree();
-  // Inflation of all obstacles by safety_space
+  // Convert unknown space between min_bound and max_bound into free.
+  void convertUnknownToFree(const Eigen::Vector3d& min_bound,
+                            const Eigen::Vector3d& max_bound);
+  // Inflation of all obstacles by safety_space.
   void inflateOccupied(const Eigen::Vector3d& safety_space);
 
   // Change detection -- when this is called, this resets the change detection

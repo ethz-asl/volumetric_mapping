@@ -928,18 +928,26 @@ void OctomapWorld::generateMarkerArray(
 }
 
 void OctomapWorld::convertUnknownToFree() {
+  Eigen::Vector3d min_bound, max_bound;
+  getMapBounds(&min_bound, &max_bound);
+  convertUnknownToFree(min_bound, max_bound);
+}
+
+void OctomapWorld::convertUnknownToFree(const Eigen::Vector3d& min_bound,
+                                        const Eigen::Vector3d& max_bound) {
   const bool lazy_eval = true;
   const double log_odds_value = octree_->getClampingThresMinLog();
   const double resolution = octree_->getResolution();
-  Eigen::Vector3d min_bound, max_bound;
-  getMapBounds(&min_bound, &max_bound);
-  octomap::point3d pmin = pointEigenToOctomap(min_bound);
-  octomap::point3d pmax = pointEigenToOctomap(max_bound);
+  const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  Eigen::Vector3d epsilon_3d;
+  epsilon_3d.setConstant(epsilon);
+  octomap::point3d pmin = pointEigenToOctomap(min_bound + epsilon_3d);
+  octomap::point3d pmax = pointEigenToOctomap(max_bound - epsilon_3d);
   // octree_->getUnknownLeafCenters would have been easier, but it doesn't get
   // all the unknown points for some reason
-  for (float x = pmin.x() + resolution / 2; x < pmax.x(); x += resolution) {
-    for (float y = pmin.y() + resolution / 2; y < pmax.y(); y += resolution) {
-      for (float z = pmin.z() + resolution / 2; z < pmax.z(); z += resolution) {
+  for (float x = pmin.x() + epsilon; x < pmax.x(); x += resolution) {
+    for (float y = pmin.y() + epsilon; y < pmax.y(); y += resolution) {
+      for (float z = pmin.z() + epsilon; z < pmax.z(); z += resolution) {
         octomap::OcTree::NodeType* res = octree_->search(x, y, z);
         if (res == NULL) {
           // Point is unknown, set it free
