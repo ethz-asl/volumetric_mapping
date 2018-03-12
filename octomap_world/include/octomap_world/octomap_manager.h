@@ -30,14 +30,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 #define OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 
-#include <glog/logging.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include "octomap_world/octomap_world.h"
 
 #include <octomap_msgs/GetOctomap.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
+#include <volumetric_msgs/GetChangedPoints.h>
 #include <volumetric_msgs/LoadMap.h>
 #include <volumetric_msgs/SaveMap.h>
 #include <volumetric_msgs/SetBoxOccupancy.h>
@@ -93,6 +94,10 @@ class OctomapManager : public OctomapWorld {
   bool setDisplayBoundsCallback(
       volumetric_msgs::SetDisplayBounds::Request& request,
       volumetric_msgs::SetDisplayBounds::Response& response);
+
+  bool getChangedPointsCallback(
+      volumetric_msgs::GetChangedPoints::Request& request,
+      volumetric_msgs::GetChangedPoints::Response& response);
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
@@ -167,6 +172,9 @@ class OctomapManager : public OctomapWorld {
   ros::ServiceServer save_point_cloud_service_;
   ros::ServiceServer set_box_occupancy_service_;
   ros::ServiceServer set_display_bounds_service_;
+  // IMPORTANT NOTE: change_detection MUST be enabled in order for this to work!
+  // Otherwise it just gives 0 changed points.
+  ros::ServiceServer get_changed_points_service_;
 
   // Keep state of the cameras.
   sensor_msgs::CameraInfoPtr left_info_;
