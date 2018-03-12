@@ -463,28 +463,28 @@ double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
 void OctomapWorld::setFree(const Eigen::Vector3d& position,
                            const Eigen::Vector3d& bounding_box_size,
-                           const boundHandling& insertion_method) {
+                           const BoundHandling& insertion_method) {
   setLogOddsBoundingBox(position, bounding_box_size,
                         octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setFree(const std::vector<Eigen::Vector3d>& positions,
                            const Eigen::Vector3d& bounding_box_size,
-                           const boundHandling& insertion_method) {
+                           const BoundHandling& insertion_method) {
   setLogOddsBoundingBox(positions, bounding_box_size,
                         octree_->getClampingThresMinLog(), insertion_method);
 }
 
 void OctomapWorld::setOccupied(const Eigen::Vector3d& position,
                                const Eigen::Vector3d& bounding_box_size,
-                               const boundHandling& insertion_method) {
+                               const BoundHandling& insertion_method) {
   setLogOddsBoundingBox(position, bounding_box_size,
                         octree_->getClampingThresMaxLog(), insertion_method);
 }
 
 void OctomapWorld::setOccupied(const std::vector<Eigen::Vector3d>& positions,
                                const Eigen::Vector3d& bounding_box_size,
-                               const boundHandling& insertion_method) {
+                               const BoundHandling& insertion_method) {
   setLogOddsBoundingBox(positions, bounding_box_size,
                         octree_->getClampingThresMaxLog(), insertion_method);
 }
@@ -505,30 +505,30 @@ void OctomapWorld::setBordersOccupied(const Eigen::Vector3d& cropping_size) {
   bbx_center = map_center;
   bbx_center.x() = map_center.x() - map_size.x() / 2 + cropping_size.x() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
   bbx_center.x() = map_center.x() + map_size.x() / 2 - cropping_size.x() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
 
   bbx_size = map_size;
   bbx_size.y() = cropping_size.y() / 2;
   bbx_center = map_center;
   bbx_center.y() = map_center.y() - map_size.y() / 2 + cropping_size.y() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
   bbx_center.y() = map_center.y() + map_size.y() / 2 - cropping_size.y() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
 
   bbx_size = map_size;
   bbx_size.z() = cropping_size.z() / 2;
   bbx_center = map_center;
   bbx_center.z() = map_center.z() - map_size.z() / 2 + cropping_size.z() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
   bbx_center.z() = map_center.z() + map_size.z() / 2 - cropping_size.z() / 4;
   getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                     boundHandling::kIncludePartialBoxes);
+                     BoundHandling::kIncludePartialBoxes);
 
   // Set all infeasible points occupied
   for (octomap::OcTreeKey key : occupied_keys) {
@@ -586,7 +586,7 @@ void OctomapWorld::getOccupiedPointCloud(
 void OctomapWorld::getOccupiedPointcloudInBoundingBox(
     const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
     pcl::PointCloud<pcl::PointXYZ>* output_cloud,
-    const boundHandling& insertion_method) const {
+    const BoundHandling& insertion_method) const {
   CHECK_NOTNULL(output_cloud);
   output_cloud->clear();
 
@@ -600,7 +600,7 @@ void OctomapWorld::getOccupiedPointcloudInBoundingBox(
 
   Eigen::Vector3d bbx_min, bbx_max;
 
-  if (insertion_method == boundHandling::kDefault) {
+  if (insertion_method == BoundHandling::kDefault) {
     adjustBoundingBox(center_corrected, bounding_box_size, insertion_method,
                       &bbx_min, &bbx_max);
   } else {
@@ -744,7 +744,7 @@ void OctomapWorld::getBoxesBoundingBox(
 
 void OctomapWorld::setLogOddsBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-    double log_odds_value, const boundHandling& insertion_method) {
+    double log_odds_value, const BoundHandling& insertion_method) {
   std::vector<Eigen::Vector3d> positions;
   positions.push_back(position);
   setLogOddsBoundingBox(positions, bounding_box_size, log_odds_value,
@@ -754,12 +754,12 @@ void OctomapWorld::setLogOddsBoundingBox(
 void OctomapWorld::setLogOddsBoundingBox(
     const std::vector<Eigen::Vector3d>& positions,
     const Eigen::Vector3d& bounding_box_size, double log_odds_value,
-    const boundHandling& insertion_method) {
+    const BoundHandling& insertion_method) {
   const bool lazy_eval = true;
   const double resolution = octree_->getResolution();
   Eigen::Vector3d bbx_min, bbx_max;
 
-  for (Eigen::Vector3d position : positions) {
+  for (const Eigen::Vector3d& position : positions) {
     adjustBoundingBox(position, bounding_box_size, insertion_method, &bbx_min,
                       &bbx_max);
 
@@ -984,7 +984,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
     if (free_box.second < safety_space.minCoeff() / 4 - epsilon) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
-                         &occupied_keys, boundHandling::kIncludePartialBoxes);
+                         &occupied_keys, BoundHandling::kIncludePartialBoxes);
       continue;
     }
 
@@ -1005,7 +1005,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
                                              free_box.second))) != kFree) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
-                         &occupied_keys, boundHandling::kIncludePartialBoxes);
+                         &occupied_keys, BoundHandling::kIncludePartialBoxes);
       continue;
     }
 
@@ -1036,7 +1036,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
       Eigen::Vector3d bbx_center = (bbx_min + bbx_max) / 2;
       Eigen::Vector3d bbx_size = bbx_max - bbx_min;
       getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
-                         boundHandling::kIncludePartialBoxes);
+                         BoundHandling::kIncludePartialBoxes);
     }
   }
 
@@ -1053,7 +1053,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
 
 void OctomapWorld::getKeysBoundingBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-    octomap::KeySet* keys, const boundHandling& insertion_method) const {
+    octomap::KeySet* keys, const BoundHandling& insertion_method) const {
   const double resolution = octree_->getResolution();
   Eigen::Vector3d bbx_min, bbx_max;
   adjustBoundingBox(position, bounding_box_size, insertion_method, &bbx_min,
@@ -1076,7 +1076,7 @@ void OctomapWorld::getKeysBoundingBox(
 
 void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
                                      const Eigen::Vector3d& bounding_box_size,
-                                     const boundHandling& insertion_method,
+                                     const BoundHandling& insertion_method,
                                      Eigen::Vector3d* bbx_min,
                                      Eigen::Vector3d* bbx_max) const {
   const double resolution = octree_->getResolution();
@@ -1089,7 +1089,7 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
   *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
   *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
 
-  if (insertion_method == boundHandling::kIncludePartialBoxes) {
+  if (insertion_method == BoundHandling::kIncludePartialBoxes) {
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
@@ -1100,7 +1100,7 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
     // Add small offset so that all boxes are considered in the for-loops
     *bbx_min -= epsilon_3d;
     *bbx_max += epsilon_3d;
-  } else if (insertion_method == boundHandling::kIgnorePartialBoxes) {
+  } else if (insertion_method == BoundHandling::kIgnorePartialBoxes) {
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
