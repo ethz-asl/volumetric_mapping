@@ -1150,10 +1150,15 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
-  *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
-  *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
+  if (insertion_method == BoundHandling::kDefault) {
+    *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
 
-  if (insertion_method == BoundHandling::kIncludePartialBoxes) {
+  } else if (insertion_method == BoundHandling::kIncludePartialBoxes) {
+    // If the bbx is exactly on boundary of a node, reducing the bbx by
+    // epsilon_3d will avoid to include the adjacent nodes as well.
+    *bbx_min = position - bounding_box_size / 2 + epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 - epsilon_3d;
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
@@ -1165,6 +1170,10 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
     *bbx_min -= epsilon_3d;
     *bbx_max += epsilon_3d;
   } else if (insertion_method == BoundHandling::kIgnorePartialBoxes) {
+    // If the bbx is exactly on boundary of a node, incrementing the bbx by
+    // epsilon_3d will include that node as well.
+    *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
