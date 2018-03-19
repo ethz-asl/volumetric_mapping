@@ -1006,8 +1006,8 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
         // It's not at the map's bounds, therefore its small size depends on a
         // near obstacle.
         getKeysBoundingBox(free_box.first,
-                           Eigen::Vector3d::Constant(free_box.second + epsilon),
-                           &occupied_keys, BoundHandling::kIgnorePartialBoxes);
+                           Eigen::Vector3d::Constant(free_box.second),
+                           &occupied_keys, BoundHandling::kIncludePartialBoxes);
         continue;
       }
     }
@@ -1028,8 +1028,8 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
                 .cwiseMax(safety_space - Eigen::Vector3d::Constant(
                                              free_box.second))) == kOccupied) {
       getKeysBoundingBox(free_box.first,
-                         Eigen::Vector3d::Constant(free_box.second + epsilon),
-                         &occupied_keys, BoundHandling::kIgnorePartialBoxes);
+                         Eigen::Vector3d::Constant(free_box.second),
+                         &occupied_keys, BoundHandling::kIncludePartialBoxes);
       continue;
     }
 
