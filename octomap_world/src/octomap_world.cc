@@ -694,7 +694,7 @@ void OctomapWorld::getBoxesBoundingBox(
     const Eigen::Vector3d& bounding_box_size,
     std::vector<std::pair<Eigen::Vector3d, double>>* box_vector) const {
   box_vector->clear();
-  if (bounding_box_size.maxCoeff() <= 0) {
+  if (bounding_box_size.maxCoeff() <= 0.0 || octree_->size() == 0) {
     return;
   }
   const Eigen::Vector3d max_boxes =
@@ -979,7 +979,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
   // be checked explicitly for its feasibility.
   double bound_threshold = 0;
   double resolution_multiple = resolution;
-  while (resolution_multiple < safety_space.minCoeff() / 4 - epsilon) {
+  while (resolution_multiple < safety_space.minCoeff() / 4.0 - epsilon) {
     bound_threshold += resolution_multiple;
     resolution_multiple *= 2;
   }
@@ -997,7 +997,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
     // In case box size implicates that the whole box is infeasible (an obstacle
     // is at a distance of at most 2 * box_size (from the center of the
     // safety_space), otherwise the pruned free box would have been bigger)
-    if (free_box.second < safety_space.minCoeff() / 4 - epsilon) {
+    if (free_box.second < safety_space.minCoeff() / 4.0 - epsilon) {
       Eigen::Vector3d min_bound_distance = free_box.first - map_min_bound;
       Eigen::Vector3d max_bound_distance = map_max_bound - free_box.first;
       Eigen::Vector3d bound_distance =
