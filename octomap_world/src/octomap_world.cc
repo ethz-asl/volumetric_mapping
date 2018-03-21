@@ -694,6 +694,9 @@ void OctomapWorld::getBoxesBoundingBox(
     const Eigen::Vector3d& bounding_box_size,
     std::vector<std::pair<Eigen::Vector3d, double>>* box_vector) const {
   box_vector->clear();
+  if (bounding_box_size.maxCoeff() <= 0.0 || octree_->size() == 0) {
+    return;
+  }
   const Eigen::Vector3d max_boxes =
       bounding_box_size / octree_->getResolution();
   const int max_vector_size = std::ceil(max_boxes.x()) *
@@ -969,6 +972,19 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
   const double log_odds_value = octree_->getClampingThresMaxLog();
   const double resolution = octree_->getResolution();
   const double epsilon = 0.001;  // Small offset to not hit boundary of nodes.
+  Eigen::Vector3d epsilon_3d;
+  epsilon_3d.setConstant(epsilon);
+
+  // Compute the maximal distance from the map's bounds where a small box has to
+  // be checked explicitly for its feasibility.
+  double bound_threshold = 0;
+  double resolution_multiple = resolution;
+  while (resolution_multiple < safety_space.minCoeff() / 4.0 - epsilon) {
+    bound_threshold += resolution_multiple;
+    resolution_multiple *= 2;
+  }
+  Eigen::Vector3d map_min_bound, map_max_bound;
+  getMapBounds(&map_min_bound, &map_max_bound);
 
   std::vector<std::pair<Eigen::Vector3d, double>> free_boxes_vector;
   getAllFreeBoxes(&free_boxes_vector);
@@ -981,17 +997,25 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
     // In case box size implicates that the whole box is infeasible (an obstacle
     // is at a distance of at most 2 * box_size (from the center of the
     // safety_space), otherwise the pruned free box would have been bigger)
-    if (free_box.second < safety_space.minCoeff() / 4 - epsilon) {
-      getKeysBoundingBox(free_box.first,
-                         Eigen::Vector3d::Constant(free_box.second),
-                         &occupied_keys, BoundHandling::kIncludePartialBoxes);
-      continue;
+    if (free_box.second < safety_space.minCoeff() / 4.0 - epsilon) {
+      Eigen::Vector3d min_bound_distance = free_box.first - map_min_bound;
+      Eigen::Vector3d max_bound_distance = map_max_bound - free_box.first;
+      Eigen::Vector3d bound_distance =
+          min_bound_distance.cwiseMin(max_bound_distance);
+      if (bound_distance.minCoeff() > bound_threshold) {
+        // It's not at the map's bounds, therefore its small size depends on a
+        // near obstacle.
+        getKeysBoundingBox(free_box.first,
+                           Eigen::Vector3d::Constant(free_box.second),
+                           &occupied_keys, BoundHandling::kIncludePartialBoxes);
+        continue;
+      }
     }
 
     // In case the whole box is feasible, nothing has to be done with this box
     if (getCellStatusBoundingBox(
             free_box.first, safety_space + Eigen::Vector3d::Constant(
-                                               free_box.second)) == kFree) {
+                                               free_box.second)) != kOccupied) {
       continue;
     }
 
@@ -1002,7 +1026,7 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
             free_box.first,
             Eigen::Vector3d::Constant(resolution - epsilon)
                 .cwiseMax(safety_space - Eigen::Vector3d::Constant(
-                                             free_box.second))) != kFree) {
+                                             free_box.second))) == kOccupied) {
       getKeysBoundingBox(free_box.first,
                          Eigen::Vector3d::Constant(free_box.second),
                          &occupied_keys, BoundHandling::kIncludePartialBoxes);
@@ -1037,6 +1061,46 @@ void OctomapWorld::inflateOccupied(const Eigen::Vector3d& safety_space) {
       Eigen::Vector3d bbx_size = bbx_max - bbx_min;
       getKeysBoundingBox(bbx_center, bbx_size, &occupied_keys,
                          BoundHandling::kIncludePartialBoxes);
+    }
+  }
+
+  // Inflate all obstacles at the map's borders, since the obstacles that are
+  // less than safety_space / 2 away from the boundary have to be inflated
+  // beyond the boundary.
+  Eigen::Vector3d direction, bounding_box_center, bounding_box_size;
+  std::vector<std::pair<Eigen::Vector3d, double>> occupied_boxes_vector;
+  for (unsigned i = 0u; i < 3u; i++) {
+    for (int sign = -1; sign <= 1; sign += 2) {
+      direction = Eigen::Vector3d::Zero();
+      direction[i] = sign;
+      bounding_box_center = getMapCenter();
+      bounding_box_center[i] +=
+          sign * (getMapSize()[i] - safety_space[i] / 2) / 2;
+      bounding_box_size = getMapSize();
+      bounding_box_size[i] = safety_space[i] / 2;
+      getOccupiedBoxesBoundingBox(bounding_box_center,
+                                  bounding_box_size - epsilon_3d,
+                                  &occupied_boxes_vector);
+      for (const std::pair<Eigen::Vector3d, double>& occupied_box :
+           occupied_boxes_vector) {
+        // Set just the inflated volume that is outside the original map bounds.
+        Eigen::Vector3d outer_bbx_min =
+            occupied_box.first -
+            (Eigen::Vector3d::Constant(occupied_box.second) + safety_space) / 2;
+        Eigen::Vector3d outer_bbx_max =
+            occupied_box.first +
+            (Eigen::Vector3d::Constant(occupied_box.second) + safety_space) / 2;
+        if (sign == -1) {
+          outer_bbx_max[i] = map_min_bound[i];
+        } else {
+          outer_bbx_min[i] = map_max_bound[i];
+        }
+        Eigen::Vector3d outer_bbx_center = (outer_bbx_min + outer_bbx_max) / 2;
+        Eigen::Vector3d outer_bbx_size =
+            outer_bbx_max - outer_bbx_min - epsilon_3d;
+        getKeysBoundingBox(outer_bbx_center, outer_bbx_size, &occupied_keys,
+                           BoundHandling::kIncludePartialBoxes);
+      }
     }
   }
 
@@ -1086,10 +1150,15 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
   Eigen::Vector3d epsilon_3d;
   epsilon_3d.setConstant(epsilon);
 
-  *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
-  *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
+  if (insertion_method == BoundHandling::kDefault) {
+    *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
 
-  if (insertion_method == BoundHandling::kIncludePartialBoxes) {
+  } else if (insertion_method == BoundHandling::kIncludePartialBoxes) {
+    // If the bbx is exactly on boundary of a node, reducing the bbx by
+    // epsilon_3d will avoid to include the adjacent nodes as well.
+    *bbx_min = position - bounding_box_size / 2 + epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 - epsilon_3d;
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
@@ -1101,6 +1170,10 @@ void OctomapWorld::adjustBoundingBox(const Eigen::Vector3d& position,
     *bbx_min -= epsilon_3d;
     *bbx_max += epsilon_3d;
   } else if (insertion_method == BoundHandling::kIgnorePartialBoxes) {
+    // If the bbx is exactly on boundary of a node, incrementing the bbx by
+    // epsilon_3d will include that node as well.
+    *bbx_min = position - bounding_box_size / 2 - epsilon_3d;
+    *bbx_max = position + bounding_box_size / 2 + epsilon_3d;
     // Align positions to the center of the octree boxes
     octomap::OcTreeKey bbx_min_key =
         octree_->coordToKey(pointEigenToOctomap(*bbx_min));
