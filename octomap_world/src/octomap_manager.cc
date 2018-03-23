@@ -50,7 +50,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
-      map_publish_frequency_(0.0) {
+      map_publish_frequency_(0.0),
+      queue_size_(1) {
   setParametersFromROS();
   subscribe();
   advertiseServices();
@@ -108,6 +109,7 @@ void OctomapManager::setParametersFromROS() {
                     params.treat_unknown_as_occupied);
   nh_private_.param("change_detection_enabled", params.change_detection_enabled,
                     params.change_detection_enabled);
+  nh_private_.param("queue_size", queue_size_, queue_size_);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -184,9 +186,9 @@ void OctomapManager::subscribe() {
   right_info_sub_ = nh_.subscribe(
       "cam1/camera_info", 1, &OctomapManager::rightCameraInfoCallback, this);
   disparity_sub_ = nh_.subscribe(
-      "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
+      "disparity", queue_size_, &OctomapManager::insertDisparityImageWithTf, this);
   pointcloud_sub_ = nh_.subscribe(
-      "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
+      "pointcloud", queue_size_, &OctomapManager::insertPointcloudWithTf, this);
   octomap_sub_ =
       nh_.subscribe("input_octomap", 1, &OctomapManager::octomapCallback, this);
 }

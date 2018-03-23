@@ -141,6 +141,8 @@ class OctomapManager : public OctomapWorld {
   Transformation T_B_D_;
 
   bool latch_topics_;
+  int queue_size_;
+
   // Subscriptions for input sensor data.
   ros::Subscriber disparity_sub_;
   ros::Subscriber left_info_sub_;
