@@ -153,11 +153,15 @@ class OctomapWorld : public WorldBase {
       const BoundHandling& insertion_method = BoundHandling::kDefault);
   virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
-  // Virtual functions for outputting map status.
+  // Virtual functions for outputting map status. If treat_unknown_as_occupied
+  // is set to true, those functions return kOccupied instead of kUnknown.
+  void enableTreatUnknownAsOccupied();
+  void disableTreatUnknownAsOccupied();
   virtual CellStatus getCellStatusBoundingBox(
       const Eigen::Vector3d& point,
       const Eigen::Vector3d& bounding_box_size) const;
   virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
+  virtual CellStatus getCellTrueStatusPoint(const Eigen::Vector3d& point) const;
   virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point,
                                              double* probability) const;
   virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
