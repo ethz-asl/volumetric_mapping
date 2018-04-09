@@ -263,12 +263,20 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
   octree_->updateInnerOccupancy();
 }
 
+void OctomapWorld::enableTreatUnknownAsOccupied() {
+  params_.treat_unknown_as_occupied = true;
+}
+
+void OctomapWorld::disableTreatUnknownAsOccupied() {
+  params_.treat_unknown_as_occupied = false;
+}
+
 OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
     const Eigen::Vector3d& point,
     const Eigen::Vector3d& bounding_box_size) const {
   // First case: center point is unknown or occupied. Can just quit.
   CellStatus center_status = getCellStatusPoint(point);
-  if (center_status != CellStatus::kFree && params_.treat_unknown_as_occupied) {
+  if (center_status != CellStatus::kFree) {
     return center_status;
   }
 
@@ -276,9 +284,9 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   octomap::OcTreeKey key;
   if (!octree_->coordToKeyChecked(pointEigenToOctomap(point), key)) {
     if (params_.treat_unknown_as_occupied) {
-      return CellStatus::kUnknown;
-    } else {
       return CellStatus::kOccupied;
+    } else {
+      return CellStatus::kUnknown;
     }
   }
 
@@ -326,12 +334,33 @@ OctomapWorld::CellStatus OctomapWorld::getCellStatusBoundingBox(
   octomap::point3d_list unknown_centers;
   octree_->getUnknownLeafCenters(unknown_centers, bbx_min, bbx_max);
   if (unknown_centers.size() > 0) {
-    return CellStatus::kUnknown;
+    if (params_.treat_unknown_as_occupied) {
+      return CellStatus::kOccupied;
+    } else {
+      return CellStatus::kUnknown;
+    }
   }
   return CellStatus::kFree;
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellStatusPoint(
+    const Eigen::Vector3d& point) const {
+  octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
+  if (node == NULL) {
+    if (params_.treat_unknown_as_occupied) {
+      return CellStatus::kOccupied;
+    } else {
+      return CellStatus::kUnknown;
+    }
+  } else if (octree_->isNodeOccupied(node)) {
+    return CellStatus::kOccupied;
+  } else {
+    return CellStatus::kFree;
+  }
+}
+
+// Returns kUnknown even if treat_unknown_as_occupied is true.
+OctomapWorld::CellStatus OctomapWorld::getCellTrueStatusPoint(
     const Eigen::Vector3d& point) const {
   octomap::OcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
   if (node == NULL) {
@@ -376,7 +405,11 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatus(
   for (octomap::OcTreeKey key : key_ray) {
     octomap::OcTreeNode* node = octree_->search(key);
     if (node == NULL) {
-      return CellStatus::kUnknown;
+      if (params_.treat_unknown_as_occupied) {
+        return CellStatus::kOccupied;
+      } else {
+        return CellStatus::kUnknown;
+      }
     } else if (octree_->isNodeOccupied(node)) {
       return CellStatus::kOccupied;
     }
