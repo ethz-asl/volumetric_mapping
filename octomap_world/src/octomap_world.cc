@@ -936,14 +936,14 @@ void OctomapWorld::generateMarkerArray(
 
     int depth_level = it.getDepth();
 
+    std_msgs::ColorRGBA c = percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z));
     if (octree_->isNodeOccupied(*it)) {
       occupied_nodes->markers[depth_level].points.push_back(cube_center);
-      occupied_nodes->markers[depth_level].colors.push_back(
-          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
+      occupied_nodes->markers[depth_level].colors.push_back(c);
     } else {
       free_nodes->markers[depth_level].points.push_back(cube_center);
-      free_nodes->markers[depth_level].colors.push_back(
-          percentToColor(colorizeMapByHeight(it.getZ(), min_z, max_z)));
+      c.a = 0.1;
+      free_nodes->markers[depth_level].colors.push_back(c);
     }
   }
 
