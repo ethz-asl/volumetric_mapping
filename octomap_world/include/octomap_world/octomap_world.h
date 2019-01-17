@@ -66,7 +66,8 @@ struct OctomapParameters {
         visualize_min_z(-std::numeric_limits<double>::max()),
         visualize_max_z(std::numeric_limits<double>::max()),
         treat_unknown_as_occupied(true),
-        change_detection_enabled(false) {
+        change_detection_enabled(false),
+        augment_free_frustum_enabled(false) {
     // Set reasonable defaults here...
   }
 
@@ -106,6 +107,10 @@ struct OctomapParameters {
 
   // Whether to track changes -- must be set to true to use getChangedPoints().
   bool change_detection_enabled;
+
+  // Enable this flag to augment free voxels into octomap within sensor's frustum.
+  bool augment_free_frustum_enabled;
+
 };
 
 // A wrapper around octomap that allows insertion from various ROS message
@@ -297,6 +302,16 @@ class OctomapWorld : public WorldBase {
                          const BoundHandling& insertion_method,
                          Eigen::Vector3d* bbx_min,
                          Eigen::Vector3d* bbx_max) const;
+  // Bsp: Free all Unknown along a ray unless ray ends at occupied
+  void freeRay(const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test);
+  // Augment the map with the predefined set of rays given current TF.
+  void augmentFreeRays(Transformation sensor_to_world);
+  //
+  void initFrustumToAugment();
+  void checkRay(const Eigen::Vector3d& view_point,
+                const Eigen::Vector3d& end_point,
+                std::vector<std::tuple<int, int, int>>& gain_log,
+                std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log);
 
   // Helper functions for building up a map from sensor data.
   void castRay(const octomap::point3d& sensor_origin,
@@ -326,6 +341,9 @@ class OctomapWorld : public WorldBase {
   // Temporary variable for KeyRay since it resizes it to a HUGE value by
   // default. Thanks a lot to @xiaopenghuang for catching this.
   octomap::KeyRay key_ray_;
+
+  std::vector<Eigen::Vector3d> multiray_endpoints_;
+
 };
 
 }  // namespace volumetric_mapping

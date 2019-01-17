@@ -101,6 +101,11 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   // Copy over all the parameters for future use (some are not used just for
   // creating the octree).
   params_ = params;
+
+  // Initialize the frustum to be used later for augmenting the map if required.
+  if (params_.augment_free_frustum_enabled)
+    initFrustumToAugment();
+
 }
 
 void OctomapWorld::getOctomapParameters(OctomapParameters* params) const {
@@ -172,6 +177,114 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
     }
   }
   updateOccupancy(&free_cells, &occupied_cells);
+}
+
+void OctomapWorld::initFrustumToAugment() {
+
+  constexpr double sensor_confident_range = 10.0;
+  constexpr double dh = 2.5 * M_PI / 180.0;
+  constexpr double dv = 2 * M_PI / 180.0;
+  constexpr double h_lim = M_PI;
+  constexpr double v_lim = M_PI / 6;
+  constexpr double yaw = 0.0;
+
+  for (double dZ = -v_lim / 2; dZ < v_lim / 2; dZ += dv) {
+    for (double dH = -h_lim / 2; dH < h_lim / 2; dH += dh) {
+      // Compute confidence zone endpoints, keep all in vector
+      double dx = sensor_confident_range * cos(dH);
+      double dy = sensor_confident_range * sin(dH);
+      double dz = sensor_confident_range * sin(dZ);
+      Eigen::Vector3d confidence_endpoint =
+           Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) * Eigen::Vector3d(dx, dy, dz);
+      multiray_endpoints_.push_back(confidence_endpoint);
+    }
+  }
+  ROS_WARN("Computed multiray_endpoints for augmenting OCTOMAP: [%d] points.", multiray_endpoints_.size());
+}
+
+void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
+  if (params_.augment_free_frustum_enabled) {
+    bool lazy_eval = true;
+    //("Augment the frustum.");
+    //ros::Time start_time = ros::Time::now();
+    for (const auto& ray_endpoint : multiray_endpoints_) {
+      auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
+      freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
+    }
+    if (lazy_eval) {
+      octree_->updateInnerOccupancy();
+    }
+    //ROS_INFO("Time to augment: %f", (ros::Time::now() - start_time).toSec());
+  }
+}
+
+inline float logodds(double probability){
+    return (float) log(probability/(1-probability));
+}
+
+void OctomapWorld::freeRay(const Eigen::Vector3d& view_point, const Eigen::Vector3d& end_point) {
+  octomap::KeySet free_cells;
+
+  octomap::KeyRay key_ray;
+  if (octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                              pointEigenToOctomap(end_point), key_ray)) {
+    bool found_occupied_node = false;
+    for (octomap::OcTreeKey key : key_ray) {
+      octomap::OcTreeNode* node = octree_->search(key);
+      if (node!=NULL && octree_->isNodeOccupied(node)) {
+        found_occupied_node = true;
+        break;
+      }
+    }
+    if (!found_occupied_node){
+      free_cells.insert(key_ray.begin(), key_ray.end());
+      for (octomap::KeySet::iterator it = free_cells.begin(),
+                                     end = free_cells.end();
+                                     it != end; ++it) {
+        //Set to barely lower than occupied
+        constexpr double eps_prob = 0.001*0.01;  //0.001*1pc
+        octree_->setNodeValue(*it, logodds(params_.threshold_occupancy-eps_prob));
+      }
+      // octree_->updateInnerOccupancy();
+    }
+  }
+}
+
+void OctomapWorld::checkRay(
+    const Eigen::Vector3d& view_point, const Eigen::Vector3d& end_point,
+    std::vector<std::tuple<int, int, int>>& gain_log,
+    std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log) {
+  octomap::KeyRay key_ray;
+  int num_unknown_voxels = 0, num_free_voxels = 0, num_occupied_voxels = 0;
+
+  if (octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                              pointEigenToOctomap(end_point), key_ray)) {
+    int skip_iter = 0;
+    for (auto key = key_ray.begin(); key != key_ray.end(); ++key) {
+      //if (++skip_iter < 3) continue;
+      //else skip_iter = 0;
+      octomap::OcTreeNode* node = octree_->search(*key);
+      Eigen::Vector3d voxel(0,0,0);
+      keyToCoord(*key, &voxel);
+      CellStatus cs = CellStatus::kUnknown;
+      if (node == NULL) {
+        ++num_unknown_voxels;
+        cs = CellStatus::kUnknown;
+      } else if (octree_->isNodeOccupied(node)) {
+        ++num_occupied_voxels;
+        cs = CellStatus::kOccupied;
+        // Done, stop here.
+        voxel_log.push_back(std::make_pair(voxel, cs));
+        break;
+      } else {
+        ++num_free_voxels;
+        cs = CellStatus::kFree;
+      }
+      voxel_log.push_back(std::make_pair(voxel, cs));
+    }
+    gain_log.push_back(std::make_tuple(num_unknown_voxels, num_free_voxels,
+                                        num_occupied_voxels));
+  }
 }
 
 void OctomapWorld::castRay(const octomap::point3d& sensor_origin,

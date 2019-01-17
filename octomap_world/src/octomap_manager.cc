@@ -108,6 +108,8 @@ void OctomapManager::setParametersFromROS() {
                     params.treat_unknown_as_occupied);
   nh_private_.param("change_detection_enabled", params.change_detection_enabled,
                     params.change_detection_enabled);
+  nh_private_.param("augment_free_frustum_enabled", params.augment_free_frustum_enabled,
+                    params.augment_free_frustum_enabled);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -452,9 +454,35 @@ void OctomapManager::insertPointcloudWithTf(
   Transformation sensor_to_world;
   if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                       pointcloud->header.stamp, &sensor_to_world)) {
+    //ros::Time time_start = ros::Time::now();
     insertPointcloud(sensor_to_world, pointcloud);
+    //ROS_INFO("Time to insert PCL to octomap: %f", (ros::Time::now() -time_start).toSec());
+    // Augment the map if required.
+    augmentFreeRays(sensor_to_world);
   }
 }
+
+void OctomapManager::getScanStatus(
+    Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,
+    std::vector<std::tuple<int, int, int>> &gain_log,
+    std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log) {
+  for (auto &v: multiray_endpoints) {
+    checkRay(pos, pos+v, gain_log, voxel_log);
+  }
+}
+
+// void OctomapManager::freeMultiRayZone(const std_msgs::Header& sensor_header,
+//                                       const std::vector<Eigen::Vector3d>& multiray_endpoints) {
+//   // Look up transform from sensor frame to world frame.
+//   Transformation sensor_to_world;
+//   if (lookupTransform(sensor_header.frame_id, world_frame_,
+//                       sensor_header.stamp, &sensor_to_world)) {
+//     for (const auto & ray_endpoint : multiray_endpoints){
+//       auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
+//       freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
+//     }
+//   }
+// }
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const std::string& to_frame,

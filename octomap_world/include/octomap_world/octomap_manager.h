@@ -65,6 +65,11 @@ class OctomapManager : public OctomapWorld {
       const stereo_msgs::DisparityImageConstPtr& disparity);
   void insertPointcloudWithTf(
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+  void augmentMapFunction();
+  void setAugmentFunction();
+  // Bsp: Free all Unknown along a set of rays unless ray ends at occupied
+  void freeMultiRayZone(const std_msgs::Header& sensor_header,
+                        const std::vector<Eigen::Vector3d>& multiray_endpoints);
 
   // Input Octomap callback.
   void octomapCallback(const octomap_msgs::Octomap& msg);
@@ -101,6 +106,11 @@ class OctomapManager : public OctomapWorld {
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
+  void getScanStatus(
+    Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,
+    std::vector<std::tuple<int, int, int>>& gain_log,
+    std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log);
+
  private:
   // Sets up subscriptions based on ROS node parameters.
   void setParametersFromROS();
@@ -120,7 +130,7 @@ class OctomapManager : public OctomapWorld {
                             const std::string& to_frame,
                             const ros::Time& timestamp,
                             Transformation* transform);
-
+  void (* pAugmentFreeRays)();
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
