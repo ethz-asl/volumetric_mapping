@@ -181,9 +181,9 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 
 void OctomapWorld::initFrustumToAugment() {
 
-  constexpr double sensor_confident_range = 10.0;
+  constexpr double sensor_confident_range = 15.0;
   constexpr double dh = 2.5 * M_PI / 180.0;
-  constexpr double dv = 2 * M_PI / 180.0;
+  constexpr double dv = 1.0 * M_PI / 180.0;
   constexpr double h_lim = M_PI;
   constexpr double v_lim = M_PI / 6;
   constexpr double yaw = 0.0;
@@ -1055,7 +1055,7 @@ void OctomapWorld::generateMarkerArray(
       occupied_nodes->markers[depth_level].colors.push_back(c);
     } else {
       free_nodes->markers[depth_level].points.push_back(cube_center);
-      c.a = 0.1;
+      c.a = 1.0;
       free_nodes->markers[depth_level].colors.push_back(c);
     }
   }

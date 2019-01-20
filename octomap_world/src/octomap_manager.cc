@@ -190,7 +190,7 @@ void OctomapManager::subscribe() {
   pointcloud_sub_ = nh_.subscribe(
       "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
   octomap_sub_ =
-      nh_.subscribe("input_octomap", 1, &OctomapManager::octomapCallback, this);
+      nh_.subscribe("input_octomap", 10, &OctomapManager::octomapCallback, this);
 }
 
 void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
