@@ -67,8 +67,19 @@ struct OctomapParameters {
         visualize_max_z(std::numeric_limits<double>::max()),
         treat_unknown_as_occupied(true),
         change_detection_enabled(false),
-        augment_free_frustum_enabled(false) {
+        augment_free_frustum_enabled(false)
+         {
     // Set reasonable defaults here...
+    free_frustum_skip = 10; // every 1sec
+    free_frustum_range = 15.0;
+    free_frustum_fov.resize(2);
+    free_frustum_fov[0] = 2 * M_PI;
+    free_frustum_fov[1] = M_PI / 6.0;
+    free_frustum_resolution.resize(2);
+    free_frustum_resolution[0] = 2.5 * M_PI / 180;
+    free_frustum_resolution[1] = 1.0 * M_PI / 180;
+
+
   }
 
   // Resolution for the Octree. It is not possible to change this without
@@ -110,6 +121,10 @@ struct OctomapParameters {
 
   // Enable this flag to augment free voxels into octomap within sensor's frustum.
   bool augment_free_frustum_enabled;
+  int free_frustum_skip;
+  double free_frustum_range;
+  std::vector<double> free_frustum_fov;
+  std::vector<double> free_frustum_resolution;
 
 };
 
@@ -343,6 +358,8 @@ class OctomapWorld : public WorldBase {
   octomap::KeyRay key_ray_;
 
   std::vector<Eigen::Vector3d> multiray_endpoints_;
+
+  int augment_count_;
 
 };
 

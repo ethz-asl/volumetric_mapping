@@ -181,21 +181,30 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 
 void OctomapWorld::initFrustumToAugment() {
 
-  constexpr double sensor_confident_range = 15.0;
-  constexpr double dh = 2.5 * M_PI / 180.0;
-  constexpr double dv = 1.0 * M_PI / 180.0;
-  constexpr double h_lim = M_PI;
-  constexpr double v_lim = M_PI / 6;
-  constexpr double yaw = 0.0;
+  // constexpr double sensor_confident_range = 15.0;
+  // constexpr double dh = 2.5 * M_PI / 180.0;
+  // constexpr double dv = 1.0 * M_PI / 180.0;
+  // constexpr double h_lim = 2 * M_PI;
+  // constexpr double v_lim = M_PI / 6;
+  // constexpr double yaw = 0.0;
+  double dh = params_.free_frustum_resolution[0];
+  double dv = params_.free_frustum_resolution[1];
+  double h_lim_2 = params_.free_frustum_fov[0] / 2.0;
+  double v_lim_2 = params_.free_frustum_fov[1] / 2.0;
+  double free_range = params_.free_frustum_range;
 
-  for (double dZ = -v_lim / 2; dZ < v_lim / 2; dZ += dv) {
-    for (double dH = -h_lim / 2; dH < h_lim / 2; dH += dh) {
+  ROS_INFO("[Octomap] Init free frustum: Range: %f; Skip: %d; fov: [%f, %f]; resolution: [%f; %f]",
+  params_.free_frustum_range, params_.free_frustum_skip,
+  params_.free_frustum_fov[0], params_.free_frustum_fov[1],
+  params_.free_frustum_resolution[0], params_.free_frustum_resolution[1]);
+
+  for (double dZ = -v_lim_2; dZ < v_lim_2; dZ += dv) {
+    for (double dH = -h_lim_2; dH < h_lim_2; dH += dh) {
       // Compute confidence zone endpoints, keep all in vector
-      double dx = sensor_confident_range * cos(dH);
-      double dy = sensor_confident_range * sin(dH);
-      double dz = sensor_confident_range * sin(dZ);
-      Eigen::Vector3d confidence_endpoint =
-           Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) * Eigen::Vector3d(dx, dy, dz);
+      double dx = free_range * cos(dH);
+      double dy = free_range * sin(dH);
+      double dz = free_range * sin(dZ);
+      Eigen::Vector3d confidence_endpoint = Eigen::Vector3d(dx, dy, dz);
       multiray_endpoints_.push_back(confidence_endpoint);
     }
   }
@@ -204,9 +213,13 @@ void OctomapWorld::initFrustumToAugment() {
 
 void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
   if (params_.augment_free_frustum_enabled) {
+    if ((augment_count_ >= 0) && (augment_count_ < params_.free_frustum_skip)) {
+      augment_count_++;
+      return;
+    }
+    augment_count_ = 0;
     bool lazy_eval = true;
-    //("Augment the frustum.");
-    //ros::Time start_time = ros::Time::now();
+    // ros::Time start_time = ros::Time::now();
     for (const auto& ray_endpoint : multiray_endpoints_) {
       auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
       freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
@@ -214,7 +227,8 @@ void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
     if (lazy_eval) {
       octree_->updateInnerOccupancy();
     }
-    //ROS_INFO("Time to augment: %f", (ros::Time::now() - start_time).toSec());
+    // ROS_INFO("Time from augmentFreeRays: %f", (ros::Time::now() -
+    // start_time).toSec());
   }
 }
 
@@ -259,10 +273,7 @@ void OctomapWorld::checkRay(
 
   if (octree_->computeRayKeys(pointEigenToOctomap(view_point),
                               pointEigenToOctomap(end_point), key_ray)) {
-    int skip_iter = 0;
     for (auto key = key_ray.begin(); key != key_ray.end(); ++key) {
-      //if (++skip_iter < 3) continue;
-      //else skip_iter = 0;
       octomap::OcTreeNode* node = octree_->search(*key);
       Eigen::Vector3d voxel(0,0,0);
       keyToCoord(*key, &voxel);

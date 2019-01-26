@@ -110,6 +110,14 @@ void OctomapManager::setParametersFromROS() {
                     params.change_detection_enabled);
   nh_private_.param("augment_free_frustum_enabled", params.augment_free_frustum_enabled,
                     params.augment_free_frustum_enabled);
+  nh_private_.param("free_frustum_skip", params.free_frustum_skip,
+                    params.free_frustum_skip);
+  nh_private_.param("free_frustum_range", params.free_frustum_range,
+                    params.free_frustum_range);
+  nh_private_.param("free_frustum_fov", params.free_frustum_fov,
+                    params.free_frustum_fov);
+  nh_private_.param("free_frustum_resolution", params.free_frustum_resolution,
+                      params.free_frustum_resolution);
 
   // Try to initialize Q matrix from parameters, if available.
   std::vector<double> Q_vec;
@@ -454,10 +462,9 @@ void OctomapManager::insertPointcloudWithTf(
   Transformation sensor_to_world;
   if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                       pointcloud->header.stamp, &sensor_to_world)) {
-    //ros::Time time_start = ros::Time::now();
+    // ros::Time time_start = ros::Time::now();
     insertPointcloud(sensor_to_world, pointcloud);
-    //ROS_INFO("Time to insert PCL to octomap: %f", (ros::Time::now() -time_start).toSec());
-    // Augment the map if required.
+    // ROS_INFO("Time to insert PCL to octomap: %f", (ros::Time::now() -time_start).toSec());
     augmentFreeRays(sensor_to_world);
   }
 }
@@ -467,22 +474,15 @@ void OctomapManager::getScanStatus(
     std::vector<std::tuple<int, int, int>> &gain_log,
     std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log) {
   for (auto &v: multiray_endpoints) {
-    checkRay(pos, pos+v, gain_log, voxel_log);
+    checkRay(pos, v, gain_log, voxel_log);
   }
 }
 
-// void OctomapManager::freeMultiRayZone(const std_msgs::Header& sensor_header,
-//                                       const std::vector<Eigen::Vector3d>& multiray_endpoints) {
-//   // Look up transform from sensor frame to world frame.
-//   Transformation sensor_to_world;
-//   if (lookupTransform(sensor_header.frame_id, world_frame_,
-//                       sensor_header.stamp, &sensor_to_world)) {
-//     for (const auto & ray_endpoint : multiray_endpoints){
-//       auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
-//       freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
-//     }
-//   }
-// }
+bool OctomapManager::adjustZFromGround(Eigen::Vector3d &pos) {
+  // Ray cast
+  // Not implemented yet.
+  return true;
+}
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const std::string& to_frame,
