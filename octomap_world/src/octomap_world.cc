@@ -218,12 +218,12 @@ void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
       return;
     }
     augment_count_ = 0;
-    bool lazy_eval = true;
     // ros::Time start_time = ros::Time::now();
     for (const auto& ray_endpoint : multiray_endpoints_) {
       auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
       freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
     }
+    bool lazy_eval = true;
     if (lazy_eval) {
       octree_->updateInnerOccupancy();
     }
@@ -250,7 +250,7 @@ void OctomapWorld::freeRay(const Eigen::Vector3d& view_point, const Eigen::Vecto
         break;
       }
     }
-    if (!found_occupied_node){
+    if (!found_occupied_node) {
       free_cells.insert(key_ray.begin(), key_ray.end());
       for (octomap::KeySet::iterator it = free_cells.begin(),
                                      end = free_cells.end();
