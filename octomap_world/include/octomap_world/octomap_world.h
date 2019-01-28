@@ -192,6 +192,9 @@ class OctomapWorld : public WorldBase {
   virtual CellStatus getLineStatusBoundingBox(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& bounding_box_size) const;
+  virtual CellStatus getDirectionalLineStatusBoundingBox(
+        const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+        const Eigen::Vector3d& bounding_box_size, bool adjust_bbox_heading) const;
   virtual void getOccupiedPointCloud(
       pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
   virtual void getOccupiedPointcloudInBoundingBox(
@@ -321,6 +324,7 @@ class OctomapWorld : public WorldBase {
   void freeRay(const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test);
   // Augment the map with the predefined set of rays given current TF.
   void augmentFreeRays(Transformation sensor_to_world);
+  void setFreeRays(Transformation sensor_to_world);
   //
   void initFrustumToAugment();
   void checkRay(const Eigen::Vector3d& view_point,

@@ -107,7 +107,7 @@ class OctomapManager : public OctomapWorld {
     std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log);
 
   bool adjustZFromGround(Eigen::Vector3d &pos);
-
+  void augmentFreeFrustum();
  private:
   // Sets up subscriptions based on ROS node parameters.
   void setParametersFromROS();
@@ -195,6 +195,9 @@ class OctomapManager : public OctomapWorld {
 
   // Transform queue, used only when use_tf_transforms is false.
   std::deque<geometry_msgs::TransformStamped> transform_queue_;
+
+  Transformation tf_w2s_latest_;
+
 };
 
 }  // namespace volumetric_mapping

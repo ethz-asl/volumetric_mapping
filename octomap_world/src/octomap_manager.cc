@@ -462,12 +462,18 @@ void OctomapManager::insertPointcloudWithTf(
   Transformation sensor_to_world;
   if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                       pointcloud->header.stamp, &sensor_to_world)) {
+    tf_w2s_latest_ = sensor_to_world;
     // ros::Time time_start = ros::Time::now();
     insertPointcloud(sensor_to_world, pointcloud);
-    // ROS_INFO("Time to insert PCL to octomap: %f", (ros::Time::now() -time_start).toSec());
+    //ROS_INFO("Time to insert PCL to octomap: %f", (ros::Time::now() -time_start).toSec());
     augmentFreeRays(sensor_to_world);
   }
 }
+
+void OctomapManager::augmentFreeFrustum() {
+  setFreeRays(tf_w2s_latest_);
+}
+
 
 void OctomapManager::getScanStatus(
     Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,

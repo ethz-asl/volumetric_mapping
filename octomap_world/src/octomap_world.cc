@@ -103,9 +103,7 @@ void OctomapWorld::setOctomapParameters(const OctomapParameters& params) {
   params_ = params;
 
   // Initialize the frustum to be used later for augmenting the map if required.
-  if (params_.augment_free_frustum_enabled)
-    initFrustumToAugment();
-
+  initFrustumToAugment();
 }
 
 void OctomapWorld::getOctomapParameters(OctomapParameters* params) const {
@@ -181,12 +179,6 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
 
 void OctomapWorld::initFrustumToAugment() {
 
-  // constexpr double sensor_confident_range = 15.0;
-  // constexpr double dh = 2.5 * M_PI / 180.0;
-  // constexpr double dv = 1.0 * M_PI / 180.0;
-  // constexpr double h_lim = 2 * M_PI;
-  // constexpr double v_lim = M_PI / 6;
-  // constexpr double yaw = 0.0;
   double dh = params_.free_frustum_resolution[0];
   double dv = params_.free_frustum_resolution[1];
   double h_lim_2 = params_.free_frustum_fov[0] / 2.0;
@@ -208,7 +200,7 @@ void OctomapWorld::initFrustumToAugment() {
       multiray_endpoints_.push_back(confidence_endpoint);
     }
   }
-  ROS_WARN("Computed multiray_endpoints for augmenting OCTOMAP: [%d] points.", multiray_endpoints_.size());
+  ROS_INFO("Computed multiray_endpoints for augmenting OCTOMAP: [%d] points.", multiray_endpoints_.size());
 }
 
 void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
@@ -218,18 +210,22 @@ void OctomapWorld::augmentFreeRays(Transformation sensor_to_world) {
       return;
     }
     augment_count_ = 0;
-    // ros::Time start_time = ros::Time::now();
-    for (const auto& ray_endpoint : multiray_endpoints_) {
-      auto transformed_ray_endpoint = sensor_to_world * ray_endpoint;
-      freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
-    }
-    bool lazy_eval = true;
-    if (lazy_eval) {
-      octree_->updateInnerOccupancy();
-    }
-    // ROS_INFO("Time from augmentFreeRays: %f", (ros::Time::now() -
-    // start_time).toSec());
+    setFreeRays(sensor_to_world);
   }
+}
+
+void OctomapWorld::setFreeRays(Transformation sensor_to_world) {
+  ros::Time time_start = ros::Time::now();
+  for (const auto& ray_endpoint : multiray_endpoints_) {
+    Eigen::Vector3d transformed_ray_endpoint(ray_endpoint[0], ray_endpoint[1], ray_endpoint[2]);
+    transformed_ray_endpoint = sensor_to_world * transformed_ray_endpoint;
+    freeRay(sensor_to_world.getPosition(), transformed_ray_endpoint);
+  }
+  bool lazy_eval = true;
+  if (lazy_eval) {
+    octree_->updateInnerOccupancy();
+  }
+  //ROS_INFO("Time to setFreeRays Octomap: %f", (ros::Time::now() -time_start).toSec());
 }
 
 inline float logodds(double probability){
@@ -615,6 +611,63 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
   }
   return CellStatus::kFree;
 }
+
+OctomapWorld::CellStatus OctomapWorld::getDirectionalLineStatusBoundingBox(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+    const Eigen::Vector3d& bounding_box_size,
+    bool adjust_bbox_heading) const {
+  // TODO(helenol): Probably best way would be to get all the coordinates along
+  // the line, then make a set of all the OcTreeKeys in all the bounding boxes
+  // around the nodes... and then just go through and query once.
+  const double epsilon = 0.001;  // Small offset
+  CellStatus ret = CellStatus::kFree;
+  const double& resolution = getResolution();
+
+  Eigen::Matrix3d rot;
+  if (adjust_bbox_heading) {
+    Eigen::Vector3d dir = end - start;
+    rot = Eigen::AngleAxisd(-std::atan2(dir.y(), dir.x()), Eigen::Vector3d::UnitZ()) *
+          Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+          Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
+  }
+
+  // Check corner connections and depending on resolution also interior:
+  // Discretization step is smaller than the octomap resolution, as this way
+  // no cell can possibly be missed
+  double x_disc = bounding_box_size.x() /
+                  ceil((bounding_box_size.x() + epsilon) / resolution);
+  double y_disc = bounding_box_size.y() /
+                  ceil((bounding_box_size.y() + epsilon) / resolution);
+  double z_disc = bounding_box_size.z() /
+                  ceil((bounding_box_size.z() + epsilon) / resolution);
+
+  // Ensure that resolution is not infinit
+  if (x_disc <= 0.0) x_disc = 1.0;
+  if (y_disc <= 0.0) y_disc = 1.0;
+  if (z_disc <= 0.0) z_disc = 1.0;
+
+  const Eigen::Vector3d bounding_box_half_size = bounding_box_size * 0.5;
+
+  for (double x = -bounding_box_half_size.x(); x <= bounding_box_half_size.x();
+       x += x_disc) {
+    for (double y = -bounding_box_half_size.y();
+         y <= bounding_box_half_size.y(); y += y_disc) {
+      for (double z = -bounding_box_half_size.z();
+           z <= bounding_box_half_size.z(); z += z_disc) {
+        Eigen::Vector3d offset(x, y, z);
+        if (adjust_bbox_heading) {
+          offset = rot * offset;
+        }
+        ret = getLineStatus(start + offset, end + offset);
+        if (ret != CellStatus::kFree) {
+          return ret;
+        }
+      }
+    }
+  }
+  return CellStatus::kFree;
+}
+
 
 double OctomapWorld::getResolution() const { return octree_->getResolution(); }
 
