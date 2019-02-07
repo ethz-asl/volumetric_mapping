@@ -106,7 +106,6 @@ class OctomapManager : public OctomapWorld {
     std::vector<std::tuple<int, int, int>>& gain_log,
     std::vector<std::pair<Eigen::Vector3d, CellStatus>>& voxel_log);
 
-  bool adjustZFromGround(Eigen::Vector3d &pos);
   void augmentFreeFrustum();
  private:
   // Sets up subscriptions based on ROS node parameters.

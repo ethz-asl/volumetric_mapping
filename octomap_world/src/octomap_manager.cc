@@ -484,12 +484,6 @@ void OctomapManager::getScanStatus(
   }
 }
 
-bool OctomapManager::adjustZFromGround(Eigen::Vector3d &pos) {
-  // Ray cast
-  // Not implemented yet.
-  return true;
-}
-
 bool OctomapManager::lookupTransform(const std::string& from_frame,
                                      const std::string& to_frame,
                                      const ros::Time& timestamp,
