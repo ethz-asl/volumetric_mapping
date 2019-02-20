@@ -190,6 +190,7 @@ void OctomapWorld::initFrustumToAugment() {
   params_.free_frustum_fov[0], params_.free_frustum_fov[1],
   params_.free_frustum_resolution[0], params_.free_frustum_resolution[1]);
 
+  multiray_endpoints_.clear();
   for (double dZ = -v_lim_2; dZ < v_lim_2; dZ += dv) {
     for (double dH = -h_lim_2; dH < h_lim_2; dH += dh) {
       // Compute confidence zone endpoints, keep all in vector
