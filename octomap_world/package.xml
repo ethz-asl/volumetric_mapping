@@ -25,4 +25,5 @@
   <depend>pcl_ros</depend>
   <depend>volumetric_map_base</depend>
   <depend>volumetric_msgs</depend>
+  <depend>opencv3_catkin</depend>
 </package>
